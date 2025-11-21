@@ -30,11 +30,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
-  // 🚫 Disable automatic link prefetch globally
-  experimental: {
-    prefetch: false,
-  },
 };
 
 export default nextConfig;

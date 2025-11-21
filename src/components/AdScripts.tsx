@@ -20,22 +20,26 @@ export function AdScripts() {
           strategy="lazyOnload" 
         />
       */}
-      
+      <Script id="ad-injector" strategy="afterInteractive">
+        {`(function(s){s.dataset.zone='9639504',s.src='https://bvtpk.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}
+      </Script>
+
+
       {/* Google Analytics */}
       {GA_TRACKING_ID && (
         <>
-            <Script
-                src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
-                strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-                {`
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
                 gtag('config', '${GA_TRACKING_ID}');
                 `}
-            </Script>
+          </Script>
         </>
       )}
     </>
