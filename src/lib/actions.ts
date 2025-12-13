@@ -13,48 +13,9 @@ import {
 import { fetchTMDB, fetchPagedData } from './tmdb';
 import { z } from 'zod';
 
-// --- From actions/discover.ts ---
-
-type SortOption = 'popularity.desc' | 'vote_average.desc' | 'primary_release_date.desc' | 'first_air_date.desc';
-
-type FetchDiscoverMediaParams = {
-    type: 'movie' | 'tv';
-    page: number;
-    filters: {
-        genre?: string;
-        year?: string;
-        country?: string;
-        sort: SortOption;
-    }
-};
-
-export async function fetchDiscoverMedia({ type, page, filters }: FetchDiscoverMediaParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-    const params: Record<string, string | number> = {
-        page: page,
-        sort_by: filters.sort,
-    };
-    if (filters.genre && filters.genre !== 'all') {
-        params.with_genres = filters.genre;
-    }
-    if (filters.year && filters.year !== 'all') {
-        if (type === 'movie') {
-            params.primary_release_year = filters.year;
-        } else {
-            params.first_air_date_year = filters.year;
-        }
-    }
-    if (filters.country && filters.country !== 'all') {
-        params.with_origin_country = filters.country;
-    }
-
-    if (type === 'movie') {
-        const data = await fetchPagedData('discover/movie', params, movieSchema);
-        return { results: data.results, total_pages: data.total_pages };
-    } else {
-        const data = await fetchPagedData('discover/tv', params, tvSchema);
-        return { results: data.results, total_pages: data.total_pages };
-    }
-}
+// This file is now safe to be removed or have its contents reduced,
+// as the client-side fetching logic has been moved to use the API proxy directly.
+// For now, we will keep the search action as it might be used differently.
 
 // --- From actions/search.ts ---
 
@@ -70,7 +31,7 @@ export async function searchMulti({ query, page }: SearchMultiParams): Promise<{
         page,
         include_adult: 'false',
     };
-    const data = await fetchTMDB('search/multi', params, searchSchema);
+    const data = await fetchTMDB(search_multi_path, params, searchSchema);
 
     if (!data) {
         return { results: [], total_pages: 0 };
@@ -87,88 +48,5 @@ export async function searchMulti({ query, page }: SearchMultiParams): Promise<{
     return { results: filteredResults, total_pages: data.total_pages };
 }
 
-// --- Functions for Genre, Year, Country, Company pages ---
-
-type FetchMediaByGenreParams = {
-    genreId: string;
-    page: number;
-  }
-  
-  export async function fetchMediaByGenre({ genreId, page }: FetchMediaByGenreParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-    const [movieData, tvData] = await Promise.all([
-      fetchPagedData('discover/movie', { with_genres: String(genreId), page: String(page) }, movieSchema),
-      fetchPagedData('discover/tv', { with_genres: String(genreId), page: String(page) }, tvSchema)
-    ]);
-  
-    const results = [
-      ...movieData.results,
-      ...tvData.results
-    ];
-  
-    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-  
-    return { results, total_pages };
-  }
-  
-  type FetchMediaByYearParams = {
-    year: string;
-    page: number;
-  }
-  
-  export async function fetchMediaByYear({ year, page }: FetchMediaByYearParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-    const [movieData, tvData] = await Promise.all([
-      fetchPagedData('discover/movie', { primary_release_year: year, page: String(page) }, movieSchema),
-      fetchPagedData('discover/tv', { first_air_date_year: year, page: String(page) }, tvSchema)
-    ]);
-  
-    const results = [
-      ...movieData.results,
-      ...tvData.results
-    ];
-  
-    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-  
-    return { results, total_pages };
-  }
-  
-  type FetchMediaByCountryParams = {
-    countryCode: string;
-    page: number;
-  }
-  
-  export async function fetchMediaByCountry({ countryCode, page }: FetchMediaByCountryParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-    const [movieData, tvData] = await Promise.all([
-      fetchPagedData('discover/movie', { with_origin_country: countryCode, page: String(page) }, movieSchema),
-      fetchPagedData('discover/tv', { with_origin_country: countryCode, page: String(page) }, tvSchema)
-    ]);
-  
-    const results = [
-      ...movieData.results,
-      ...tvData.results
-    ];
-  
-    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-  
-    return { results, total_pages };
-  }
-  
-  type FetchMediaByCompanyParams = {
-    companyId: string;
-    page: number;
-  }
-  
-  export async function fetchMediaByCompany({ companyId, page }: FetchMediaByCompanyParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-    const [movieData, tvData] = await Promise.all([
-      fetchPagedData('discover/movie', { with_companies: String(companyId), page: String(page) }, movieSchema),
-      fetchPagedData('discover/tv', { with_companies: String(companyId), page: String(page) }, tvSchema)
-    ]);
-  
-    const results = [
-      ...movieData.results,
-      ...tvData.results
-    ];
-  
-    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-  
-    return { results, total_pages };
-  }
+// Define the search path, which was missing.
+const search_multi_path = 'search/multi';

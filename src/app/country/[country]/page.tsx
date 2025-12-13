@@ -1,8 +1,7 @@
 
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { getCountryName } from '@/lib/tmdb';
-import { fetchMediaByCountry } from '@/lib/actions';
+import { getCountryName, fetchMediaByCountry } from '@/lib/tmdb';
 import { siteConfig } from '@/config/site';
 import { CountryPageContent, CountryPageSkeleton } from './country-page-client';
 

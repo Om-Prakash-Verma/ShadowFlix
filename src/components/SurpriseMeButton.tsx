@@ -25,15 +25,13 @@ export function SurpriseMeButton() {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-            <form action={handleClick}>
-                <Button variant="ghost" size="icon" type="submit" disabled={isLoading} aria-label="Surprise Me">
-                    {isLoading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    ) : (
-                    <Dices className="h-6 w-6" />
-                    )}
-                </Button>
-            </form>
+            <Button variant="ghost" size="icon" onClick={handleClick} disabled={isLoading} aria-label="Surprise Me">
+                {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                <Dices className="h-6 w-6" />
+                )}
+            </Button>
         </TooltipTrigger>
         <TooltipContent>
           <p>Surprise Me!</p>

@@ -1,12 +1,10 @@
 
-
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useInView } from 'react-intersection-observer';
-import { getSeasonDetails, fetchRecommendations, fetchReviews } from '@/lib/tmdb';
 import type { CastMember, MovieDetails, TVShowDetails, Season, SeasonDetails as SeasonDetailsType, Episode, Video, WatchProviders as WatchProvidersType, ProductionCompany, PersonCombinedCreditsCast, Movie, TVShow, Review } from '@/lib/tmdb-schemas';
 import { slugify, formatRuntime, getBackdropImage, getPosterImage, getProfileImage } from '@/lib/utils';
 import { StarRating, PosterCard } from '@/components/media';
@@ -21,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ChevronLeft, ChevronRight, PlayCircle, Loader2, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { fetchTMDB } from '@/lib/tmdb-client';
+import { pagedResponseSchema, movieSchema, tvSchema, reviewSchema, seasonDetailsSchema } from '@/lib/tmdb-schemas';
 
 
 //================================================================//
@@ -235,29 +235,24 @@ export function SeasonsDisplay({ seasons, showId, showName, initialData }: Seaso
   const [seasonDetails, setSeasonDetails] = useState<SeasonDetailsType | null>(initialData);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchSeasonDetails = useCallback(async (seasonNumber: string) => {
-    if (initialData?.season_number === parseInt(seasonNumber)) {
+  const handleSeasonChange = useCallback(async (seasonNumber: string) => {
+    setSelectedSeasonNumber(seasonNumber);
+    if (initialData?.season_number?.toString() === seasonNumber) {
       setSeasonDetails(initialData);
       return;
     }
+
     setIsLoading(true);
-    const details = await getSeasonDetails(showId, parseInt(seasonNumber));
-    setSeasonDetails(details);
-    setIsLoading(false);
-  }, [showId, initialData]);
-
-  useEffect(() => {
-    if (!selectedSeasonNumber) return;
-    if (initialData?.season_number?.toString() !== selectedSeasonNumber) {
-      fetchSeasonDetails(selectedSeasonNumber);
-    } else {
-      setSeasonDetails(initialData);
+    try {
+      const details = await fetchTMDB(`tv/${showId}/season/${seasonNumber}`, {}, seasonDetailsSchema);
+      setSeasonDetails(details);
+    } catch (error) {
+      console.error("Failed to fetch season details", error);
+      setSeasonDetails(null);
+    } finally {
+      setIsLoading(false);
     }
-  }, [selectedSeasonNumber, fetchSeasonDetails, initialData]);
-
-  const handleSeasonChange = (seasonNumber: string) => {
-    setSelectedSeasonNumber(seasonNumber);
-  };
+  }, [showId, initialData]);
 
   const selectedSeasonInfo = filteredSeasons.find(
     s => s.season_number.toString() === selectedSeasonNumber
@@ -310,6 +305,9 @@ export function SeasonsDisplay({ seasons, showId, showName, initialData }: Seaso
                 seasonNumber={seasonDetails.season_number}
               />
             ))
+          )}
+           {!seasonDetails && !isLoading && (
+            <p>Could not load episodes for this season.</p>
           )}
         </div>
       </ScrollArea>
@@ -584,9 +582,10 @@ type RecommendationsProps = {
   } | null;
 };
 
-export function Recommendations({ type, initialData }: RecommendationsProps) {
-
-  if (!initialData || initialData.results.length === 0) {
+export function Recommendations({ id, type, initialData }: RecommendationsProps) {
+  const [items, setItems] = useState(initialData?.results || []);
+  
+  if (!initialData || items.length === 0) {
     return null;
   }
 
@@ -594,13 +593,14 @@ export function Recommendations({ type, initialData }: RecommendationsProps) {
     <section>
       <h2 className="text-2xl font-bold mb-4">More Like This</h2>
       <Carousel>
-        {initialData.results.map(item => (
-          <PosterCard key={item.id} item={item} type={type} />
+        {items.map(item => (
+          <PosterCard key={item.id} item={item} type={'title' in item ? 'movie' : 'tv'} />
         ))}
       </Carousel>
     </section>
   );
 }
+
 
 
 //================================================================//
@@ -661,25 +661,32 @@ export function Reviews({ id, type, initialData }: ReviewsProps) {
   const [reviews, setReviews] = useState(initialData?.results || []);
   const [page, setPage] = useState(initialData?.page || 1);
   const [totalPages, setTotalPages] = useState(initialData?.total_pages || 1);
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
   const hasMore = page < totalPages;
 
   const loadMoreReviews = useCallback(async () => {
-    if (isPending || !hasMore) return;
+    if (isLoading || !hasMore) return;
 
-    startTransition(async () => {
-      const nextPage = page + 1;
-      try {
-        const data = await fetchReviews(type, id, nextPage);
+    setIsLoading(true);
+    try {
+      const data = await fetchTMDB(
+        `${type}/${id}/reviews`,
+        { page: page + 1 },
+        pagedResponseSchema(reviewSchema)
+      );
+
+      if (data) {
         setReviews(prev => [...prev, ...data.results]);
-        setPage(nextPage);
+        setPage(data.page);
         setTotalPages(data.total_pages);
-      } catch (error) {
-        console.error('Failed to fetch more reviews:', error);
       }
-    });
-  }, [type, id, page, isPending, hasMore]);
+    } catch (error) {
+      console.error('Failed to fetch more reviews:', error);
+    } finally {
+        setIsLoading(false);
+    }
+  }, [type, id, page, isLoading, hasMore]);
 
   if (!initialData) {
     return (
@@ -715,14 +722,14 @@ export function Reviews({ id, type, initialData }: ReviewsProps) {
 
       {hasMore && (
         <div className="flex justify-center mt-8">
-          <Button onClick={loadMoreReviews} disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button onClick={loadMoreReviews} disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Load More
           </Button>
         </div>
       )}
 
-      {!isPending && !hasMore && reviews.length > 0 && (
+      {!isLoading && !hasMore && reviews.length > 0 && (
         <div className="h-10 flex justify-center items-center mt-8">
           <p className="text-muted-foreground">You've reached the end.</p>
         </div>
@@ -804,4 +811,3 @@ export function ReviewCard({ review }: ReviewCardProps) {
     </Card>
   );
 }
-

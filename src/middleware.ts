@@ -5,6 +5,10 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get("host");
   const wwwRedirect = process.env.NEXT_PUBLIC_WWW_REDIRECT === "true";
 
+  if (request.method === 'POST') {
+    return NextResponse.next();
+  }
+
   if (
     host &&
     process.env.NEXT_PUBLIC_SITE_URL &&
@@ -26,6 +30,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api/|_next/|_static/|examples/|_vercel|[\\w-]+\\.\\w+).*)"
+    '/((?!api|trpc|_next/static|_next/image|assets|favicon.ico|sw.js).*)',
   ],
 };

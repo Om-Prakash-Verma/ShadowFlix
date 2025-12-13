@@ -2,7 +2,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import type { Movie, TVShow } from '@/lib/tmdb-schemas';
-import { fetchMediaByYear } from '@/lib/actions';
+import { fetchMediaByYear } from '@/lib/tmdb';
 import { siteConfig } from '@/config/site';
 import { YearPageContent, YearPageSkeleton } from './year-page-client';
 

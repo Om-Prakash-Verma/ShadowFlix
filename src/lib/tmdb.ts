@@ -46,10 +46,10 @@ if (!API_KEY) {
 }
 
 // =========================================================================
-// CORE FETCHING LOGIC
+// CORE FETCHING LOGIC (SERVER-SIDE)
 // =========================================================================
 
-export async function fetchTMDB<T>(path: string, params: Record<string, string | number> = {}, schema: z.ZodSchema<T>): Promise<T | null> {
+export async function fetchTMDB<T>(path: string, params: Record<string, string | number | boolean> = {}, schema: z.ZodSchema<T>): Promise<T | null> {
   if (!API_KEY) return null; // Don't fetch if key is missing
 
   const url = new URL(`${API_BASE_URL}/${path}`);
@@ -118,6 +118,9 @@ export async function getCompanyDetails(id: string | number): Promise<CompanyDet
   return fetchTMDB(`company/${id}`, {}, companyDetailsSchema);
 }
 
+export async function getSeasonDetails(tvId: string | number, seasonNumber: number): Promise<SeasonDetails | null> {
+  return fetchTMDB(`tv/${tvId}/season/${seasonNumber}`, {}, seasonDetailsSchema);
+}
 
 // --- Homepage Data ---
 export const fetchAllHomepageData = async () => {
@@ -218,19 +221,7 @@ export async function getCountryName(countryCode: string): Promise<string | null
   return countries[countryCode] || null;
 }
 
-
-// =========================================================================
-// SERVER ACTIONS (Callable from Client Components)
-// =========================================================================
-
-export async function getSeasonDetails(tvId: string | number, seasonNumber: number): Promise<SeasonDetails | null> {
-  return fetchTMDB(`tv/${tvId}/season/${seasonNumber}`, {}, seasonDetailsSchema);
-}
-
-export async function getExternalIds(mediaType: 'movie' | 'tv', tmdbId: string | number): Promise<ExternalIds | null> {
-  return fetchTMDB(`${mediaType}/${tmdbId}/external_ids`, {}, externalIdsSchema);
-}
-
+// --- Recommendation and Review Fetchers (for initial data load) ---
 export async function getMovieRecommendations(movieId: string | number, page = 1) {
   return fetchPagedData(`movie/${movieId}/recommendations`, { page }, movieSchema);
 }
@@ -247,102 +238,78 @@ export async function getTvReviews(tvId: string | number, page = 1) {
   return fetchPagedData(`tv/${tvId}/reviews`, { page }, reviewSchema);
 }
 
-export async function fetchRecommendations(type: 'movie' | 'tv', id: number, page: number) {
-  if (type === 'movie') {
-    return getMovieRecommendations(id, page);
+
+// --- Functions for Combined Fetching on Initial Page Loads ---
+export async function fetchMediaByGenre({ genreId, page }: { genreId: string; page: number; }): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
+    const [movieData, tvData] = await Promise.all([
+      fetchPagedData('discover/movie', { with_genres: String(genreId), page: String(page), sort_by: 'popularity.desc' }, movieSchema),
+      fetchPagedData('discover/tv', { with_genres: String(genreId), page: String(page), sort_by: 'popularity.desc' }, tvSchema)
+    ]);
+  
+    const results = [
+      ...movieData.results,
+      ...tvData.results
+    ].sort((a,b) => (b.popularity || 0) - (a.popularity || 0));
+  
+    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
+  
+    return { results, total_pages };
   }
-  return getTvRecommendations(id, page);
-}
-
-export async function fetchReviews(type: 'movie' | 'tv', id: number, page: number) {
-  if (type === 'movie') {
-    return getMovieReviews(id, page);
+  
+export async function fetchMediaByYear({ year, page }: { year: string; page: number; }): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
+    const [movieData, tvData] = await Promise.all([
+      fetchPagedData('discover/movie', { primary_release_year: year, page: String(page), sort_by: 'popularity.desc' }, movieSchema),
+      fetchPagedData('discover/tv', { first_air_date_year: year, page: String(page), sort_by: 'popularity.desc' }, tvSchema)
+    ]);
+  
+    const results = [
+      ...movieData.results,
+      ...tvData.results
+    ].sort((a,b) => (b.popularity || 0) - (a.popularity || 0));
+  
+    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
+  
+    return { results, total_pages };
   }
-  return getTvReviews(id, page);
+  
+export async function fetchMediaByCountry({ countryCode, page }: { countryCode: string; page: number; }): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
+    const [movieData, tvData] = await Promise.all([
+      fetchPagedData('discover/movie', { with_origin_country: countryCode, page: String(page), sort_by: 'popularity.desc' }, movieSchema),
+      fetchPagedData('discover/tv', { with_origin_country: countryCode, page: String(page), sort_by: 'popularity.desc' }, tvSchema)
+    ]);
+  
+    const results = [
+      ...movieData.results,
+      ...tvData.results
+    ].sort((a,b) => (b.popularity || 0) - (a.popularity || 0));
+  
+    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
+  
+    return { results, total_pages };
+  }
+  
+export async function fetchMediaByCompany({ companyId, page }: { companyId: string; page: number; }): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
+    const [movieData, tvData] = await Promise.all([
+      fetchPagedData('discover/movie', { with_companies: String(companyId), page: String(page), sort_by: 'popularity.desc' }, movieSchema),
+      fetchPagedData('discover/tv', { with_companies: String(companyId), page: String(page), sort_by: 'popularity.desc' }, tvSchema)
+    ]);
+  
+    const results = [
+      ...movieData.results,
+      ...tvData.results
+    ].sort((a,b) => (b.popularity || 0) - (a.popularity || 0));
+  
+    const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
+  
+    return { results, total_pages };
 }
 
-type FetchMediaByGenreParams = {
-  genreId: string;
-  page: number;
-}
+// =========================================================================
+// SERVER ACTIONS (Callable from Client Components)
+// =========================================================================
 
-export async function fetchMediaByGenre({ genreId, page }: FetchMediaByGenreParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-  const [movieData, tvData] = await Promise.all([
-    fetchPagedData('discover/movie', { with_genres: String(genreId), page: String(page) }, movieSchema),
-    fetchPagedData('discover/tv', { with_genres: String(genreId), page: String(page) }, tvSchema)
-  ]);
-
-  const results = [
-    ...movieData.results,
-    ...tvData.results
-  ];
-
-  const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-
-  return { results, total_pages };
-}
-
-type FetchMediaByYearParams = {
-  year: string;
-  page: number;
-}
-
-export async function fetchMediaByYear({ year, page }: FetchMediaByYearParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-  const [movieData, tvData] = await Promise.all([
-    fetchPagedData('discover/movie', { primary_release_year: year, page: String(page) }, movieSchema),
-    fetchPagedData('discover/tv', { first_air_date_year: year, page: String(page) }, tvSchema)
-  ]);
-
-  const results = [
-    ...movieData.results,
-    ...tvData.results
-  ];
-
-  const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-
-  return { results, total_pages };
-}
-
-type FetchMediaByCountryParams = {
-  countryCode: string;
-  page: number;
-}
-
-export async function fetchMediaByCountry({ countryCode, page }: FetchMediaByCountryParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-  const [movieData, tvData] = await Promise.all([
-    fetchPagedData('discover/movie', { with_origin_country: countryCode, page: String(page) }, movieSchema),
-    fetchPagedData('discover/tv', { with_origin_country: countryCode, page: String(page) }, tvSchema)
-  ]);
-
-  const results = [
-    ...movieData.results,
-    ...tvData.results
-  ];
-
-  const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-
-  return { results, total_pages };
-}
-
-type FetchMediaByCompanyParams = {
-  companyId: string;
-  page: number;
-}
-
-export async function fetchMediaByCompany({ companyId, page }: FetchMediaByCompanyParams): Promise<{ results: (Movie | TVShow)[], total_pages: number }> {
-  const [movieData, tvData] = await Promise.all([
-    fetchPagedData('discover/movie', { with_companies: String(companyId), page: String(page) }, movieSchema),
-    fetchPagedData('discover/tv', { with_companies: String(companyId), page: String(page) }, tvSchema)
-  ]);
-
-  const results = [
-    ...movieData.results,
-    ...tvData.results
-  ];
-
-  const total_pages = Math.max(movieData.total_pages, tvData.total_pages);
-
-  return { results, total_pages };
+export async function getExternalIds(mediaType: 'movie' | 'tv', tmdbId: string | number): Promise<ExternalIds | null> {
+  return fetchTMDB(`${mediaType}/${tmdbId}/external_ids`, {}, externalIdsSchema);
 }
 
 

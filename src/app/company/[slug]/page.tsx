@@ -1,12 +1,11 @@
 
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { getCompanyDetails } from '@/lib/tmdb';
+import { getCompanyDetails, fetchMediaByCompany } from '@/lib/tmdb';
 import { MediaListSkeleton } from '@/components/media';
 import { Skeleton } from '@/components/ui/skeleton';
 import { extractIdFromSlug, getPosterImage } from '@/lib/utils';
 import { siteConfig } from '@/config/site';
-import { fetchMediaByCompany } from '@/lib/actions';
 import { CompanyPageContent, CompanyPageSkeleton } from './company-page-client';
 
 export const runtime = 'edge';

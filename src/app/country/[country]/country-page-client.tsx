@@ -4,11 +4,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useInView } from 'react-intersection-observer';
 import type { Movie, TVShow } from '@/lib/tmdb-schemas';
-import { fetchMediaByCountry as fetcher } from '@/lib/actions';
 import { MediaListItem, MediaListItemSkeleton, MediaListSkeleton } from '@/components/media';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetchTMDB } from '@/lib/tmdb-client';
+import { pagedResponseSchema, movieSchema, tvSchema } from '@/lib/tmdb-schemas';
 
 type MediaItem = Movie | TVShow;
+
+async function fetcher({ countryCode, page }: { countryCode: string, page: number }): Promise<{ results: MediaItem[], total_pages: number }> {
+    const [movieData, tvData] = await Promise.all([
+      fetchTMDB('discover/movie', { with_origin_country: countryCode, page }, pagedResponseSchema(movieSchema)),
+      fetchTMDB('discover/tv', { with_origin_country: countryCode, page }, pagedResponseSchema(tvSchema))
+    ]);
+  
+    const results: MediaItem[] = [];
+    if(movieData) results.push(...movieData.results);
+    if(tvData) results.push(...tvData.results);
+    
+    results.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+    const total_pages = Math.max(movieData?.total_pages || 0, tvData?.total_pages || 0);
+  
+    return { results, total_pages };
+}
 
 type CountryPageContentProps = {
     countryCode: string;
@@ -65,7 +83,6 @@ function CountryResults({ countryCode, initialData, initialTotalPages }: { count
   });
 
   const hasMore = page < totalPages;
-  const isInitialLoading = false;
 
   const loadItems = useCallback(async () => {
     if (isLoading || !hasMore) return;
@@ -76,10 +93,11 @@ function CountryResults({ countryCode, initialData, initialTotalPages }: { count
     try {
       const data = await fetcher({ countryCode, page: nextPage });
       setItems(prev => {
-        const newItems = data.results.filter(
+          const newItems = data.results.filter(
           (newItem) => !prev.some(existingItem => existingItem.id === newItem.id)
-        );
-        return [...prev, ...newItems];
+          );
+          const combined = [...prev, ...newItems];
+          return combined.sort((a,b) => (b.popularity || 0) - (a.popularity || 0));
       });
       setPage(nextPage);
       setTotalPages(data.total_pages);
@@ -100,11 +118,8 @@ function CountryResults({ countryCode, initialData, initialTotalPages }: { count
     setItems(initialData);
     setPage(1);
     setTotalPages(initialTotalPages);
-  }, [initialData, initialTotalPages]);
+  }, [countryCode, initialData, initialTotalPages]);
 
-  if (isInitialLoading) {
-    return <MediaListSkeleton />;
-  }
 
   if (items.length === 0 && !isLoading) {
     return <p className="text-muted-foreground">No movies or TV shows found for this country.</p>;

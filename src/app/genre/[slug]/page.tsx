@@ -1,11 +1,8 @@
 
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { getGenres } from '@/lib/tmdb';
-import type { Movie, TVShow } from '@/lib/tmdb-schemas';
+import { getGenres, fetchMediaByGenre } from '@/lib/tmdb';
 import { extractIdFromSlug } from '@/lib/utils';
-import { siteConfig } from '@/config/site';
-import { fetchMediaByGenre } from '@/lib/actions';
 import { GenrePageContent, GenrePageSkeleton } from './genre-page-client';
 
 export const runtime = 'edge';
@@ -16,13 +13,29 @@ type GenrePageProps = {
   };
 };
 
+async function getGenreNameFromSlug(slug: string): Promise<string | null> {
+    const genreId = extractIdFromSlug(slug);
+    if (!genreId) return null;
+
+    const [movieGenres, tvGenres] = await Promise.all([
+        getGenres('movie'),
+        getGenres('tv'),
+    ]);
+    
+    const allGenres = {...movieGenres, ...tvGenres};
+    const genreName = allGenres[Number(genreId)];
+
+    if (genreName) return genreName;
+
+    // Fallback for slugs where the name is present but ID might be wrong
+    const nameFromSlug = slug.split('-').slice(0, -1).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    return nameFromSlug || null;
+}
+
 export async function generateMetadata({ params }: GenrePageProps): Promise<Metadata> {
     const { slug } = params;
     const genreId = extractIdFromSlug(slug);
-    const movieGenres = await getGenres('movie');
-    const tvGenres = await getGenres('tv');
-    const allGenres = { ...movieGenres, ...tvGenres };
-    const genreName = allGenres[Number(genreId)] || slug.split('-').slice(0, -1).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    const genreName = await getGenreNameFromSlug(slug);
 
     if (!genreId || !genreName) {
         return { title: 'Genre not found' };
@@ -54,15 +67,18 @@ export async function generateMetadata({ params }: GenrePageProps): Promise<Meta
 export default async function GenrePage({ params }: GenrePageProps) {
     const { slug } = params;
     const genreId = extractIdFromSlug(slug);
-    const initialData = await fetchMediaByGenre({ genreId, page: 1 });
+    
+    const [initialData, genreName] = await Promise.all([
+        genreId ? fetchMediaByGenre({ genreId, page: 1 }) : Promise.resolve({ results: [], total_pages: 0 }),
+        getGenreNameFromSlug(slug)
+    ]);
 
-    const genreName = slug.split('-').slice(0, -1).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
     return (
         <Suspense fallback={<GenrePageSkeleton />}>
             <GenrePageContent 
                 genreId={genreId}
-                genreName={genreName}
+                genreName={genreName || 'Genre'}
                 initialData={initialData.results}
                 totalPages={initialData.total_pages}
             />

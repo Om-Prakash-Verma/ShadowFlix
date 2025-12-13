@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import React, { useState, useEffect, useCallback, useTransition, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useInView } from 'react-intersection-observer';
@@ -14,14 +13,15 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import type { Movie, TVShow, SearchResult, PersonCombinedCreditsCast, CollectionDetails } from '@/lib/tmdb-schemas';
-import { slugify, getPosterImage, getBackdropImage } from '@/lib/utils';
+import { slugify, getPosterImage } from '@/lib/utils';
 import { Star, PlayCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/forms';
 import { Card } from '@/components/ui/layout';
-import { fetchDiscoverMedia } from '@/lib/actions';
 import { cn } from '@/lib/utils';
+import { fetchTMDB } from '@/lib/tmdb-client';
+import { pagedResponseSchema, movieSchema, tvSchema } from '@/lib/tmdb-schemas';
 
 
 //================================================================//
@@ -179,7 +179,6 @@ type MediaBrowserProps = {
 };
 
 export function MediaBrowser({ title, type, genres, countries }: MediaBrowserProps) {
-
   const [filters, setFilters] = useState({
     genre: 'all',
     year: 'all',
@@ -190,51 +189,55 @@ export function MediaBrowser({ title, type, genres, countries }: MediaBrowserPro
   const [items, setItems] = useState<(Movie | TVShow)[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(true);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 50 }, (_, i) => (currentYear - i).toString());
 
-  const loadInitialItems = useCallback((currentFilters: typeof filters) => {
-    setIsInitialLoading(true);
-    startTransition(async () => {
-      try {
-        const data = await fetchDiscoverMedia({
-          type,
-          page: 1,
-          filters: currentFilters
-        });
-        setItems(data.results);
-        setPage(1);
-        setTotalPages(data.total_pages);
-      } catch (error) {
-        console.error("Failed to fetch initial items", error);
-      } finally {
-        setIsInitialLoading(false);
-      }
-    });
+  const fetcher = useCallback(async (page: number, currentFilters: typeof filters) => {
+    const params: Record<string, string | number> = {
+        page: page,
+        sort_by: currentFilters.sort,
+    };
+    if (currentFilters.genre && currentFilters.genre !== 'all') {
+        params.with_genres = currentFilters.genre;
+    }
+    if (currentFilters.year && currentFilters.year !== 'all') {
+        if (type === 'movie') {
+            params.primary_release_year = currentFilters.year;
+        } else {
+            params.first_air_date_year = currentFilters.year;
+        }
+    }
+    if (currentFilters.country && currentFilters.country !== 'all') {
+        params.with_origin_country = currentFilters.country;
+    }
+    
+    const schema = type === 'movie' ? pagedResponseSchema(movieSchema) : pagedResponseSchema(tvSchema);
+    const data = await fetchTMDB(`discover/${type}`, params, schema);
+    return data || { results: [], total_pages: 1, page: 1 };
   }, [type]);
+
+  const loadInitialItems = useCallback((currentFilters: typeof filters) => {
+    setIsLoading(true);
+    fetcher(1, currentFilters).then(data => {
+      setItems(data.results);
+      setPage(1);
+      setTotalPages(data.total_pages);
+      setIsLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setIsLoading(false);
+    });
+  }, [fetcher]);
 
   useEffect(() => {
     loadInitialItems(filters);
-  }, [loadInitialItems]);
-
+  }, [filters, loadInitialItems]);
 
   const handleFilterChange = <K extends keyof typeof filters>(key: K, value: (typeof filters)[K]) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    loadInitialItems(newFilters);
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
-  
-  const fetcher = useCallback(async (nextPage: number) => {
-      const data = await fetchDiscoverMedia({
-        type,
-        page: nextPage,
-        filters,
-      });
-      return data.results;
-  }, [type, filters]);
 
   const sortOptions = type === 'movie' ? [
     { value: 'popularity.desc', label: 'Popularity' },
@@ -312,9 +315,9 @@ export function MediaBrowser({ title, type, genres, countries }: MediaBrowserPro
       <MediaGrid 
           initialItems={items} 
           type={type}
-          initialLoading={isInitialLoading || isPending}
+          initialLoading={isLoading}
           imageSize="w342"
-          fetcher={fetcher}
+          fetcher={(nextPage: number) => fetcher(nextPage, filters).then(data => data.results)}
           initialPage={page}
           totalPages={totalPages}
       />
