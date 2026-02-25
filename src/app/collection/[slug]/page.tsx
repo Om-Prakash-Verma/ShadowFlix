@@ -5,6 +5,8 @@ import { BackgroundImage } from '@/components/media/details';
 import { PosterCard } from '@/components/media';
 import type { Metadata } from 'next';
 
+export const runtime = 'edge';
+
 type CollectionPageProps = {
   params: Promise<{
     slug: string;

@@ -1,10 +1,11 @@
-
 import { notFound } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import type { Metadata } from 'next';
+
+export const runtime = 'edge';
 
 type GuideProps = {
   params: Promise<{ slug: string }>;

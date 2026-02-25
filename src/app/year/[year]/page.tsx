@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { fetchMediaByYear } from '@/lib/tmdb';
 import { YearPageContent, YearPageSkeleton } from './year-page-client';
 
+export const runtime = 'edge';
+
 type YearPageProps = {
     params: Promise<{
         year: string;

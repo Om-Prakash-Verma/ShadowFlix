@@ -4,6 +4,8 @@ import { getCompanyDetails, fetchMediaByCompany } from '@/lib/tmdb';
 import { extractIdFromSlug, getPosterImage } from '@/lib/utils';
 import { CompanyPageContent, CompanyPageSkeleton } from './company-page-client';
 
+export const runtime = 'edge';
+
 type CompanyPageProps = {
   params: Promise<{
     slug: string;

@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { getCountryName, fetchMediaByCountry } from '@/lib/tmdb';
 import { CountryPageContent, CountryPageSkeleton } from './country-page-client';
 
+export const runtime = 'edge';
+
 type CountryPageProps = {
     params: Promise<{
         country: string;

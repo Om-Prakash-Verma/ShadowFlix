@@ -3,6 +3,8 @@ import { siteConfig } from '@/config/site';
 import { getGenres, getCountries, fetchAllHomepageData } from '@/lib/tmdb';
 import { slugify } from '@/lib/utils';
 
+export const runtime = 'edge';
+
 /**
  * Segmented Sitemap Implementation for Enterprise Scale.
  * This allows us to bypass the 50,000 URL limit and improve indexing speed.
@@ -49,7 +51,7 @@ export default async function sitemap({
       const type = 'title' in item ? 'movie' : 'tv';
       const title = 'title' in item ? item.title : item.name;
       return {
-        url: `${baseUrl}/${type}/${slugify(title)}-${item.id}`,
+        url: `${baseUrl}/${type}/${slugify(title || '')}-${item.id}`,
         lastModified: new Date(),
         changeFrequency: 'weekly',
         priority: 0.7,
@@ -65,7 +67,7 @@ export default async function sitemap({
     ]);
 
     const genreRoutes = Object.entries({ ...movieGenres, ...tvGenres }).map(([id, name]) => ({
-      url: `${baseUrl}/genre/${slugify(name)}-${id}`,
+      url: `${baseUrl}/genre/${slugify(name || '')}-${id}`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.6,
