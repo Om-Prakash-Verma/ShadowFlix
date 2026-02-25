@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 
-const API_KEY = process.env.TMDB_API_KEY;
+const API_KEY = process.env.TMDB_API_KEY || '67f72af3decc8346e0493120f89e5988';
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 
 export const runtime = 'edge';
