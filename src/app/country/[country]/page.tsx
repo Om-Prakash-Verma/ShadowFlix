@@ -1,11 +1,7 @@
-
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getCountryName, fetchMediaByCountry } from '@/lib/tmdb';
-import { siteConfig } from '@/config/site';
 import { CountryPageContent, CountryPageSkeleton } from './country-page-client';
-
-export const runtime = 'edge';
 
 type CountryPageProps = {
     params: Promise<{

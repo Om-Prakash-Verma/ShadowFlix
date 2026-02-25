@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useInView } from 'react-intersection-observer';
-import type { CastMember, MovieDetails, TVShowDetails, Season, SeasonDetails as SeasonDetailsType, Episode, Video, WatchProviders as WatchProvidersType, ProductionCompany, PersonCombinedCreditsCast, Movie, TVShow, Review } from '@/lib/tmdb-schemas';
+import type { CastMember, MovieDetails, TVShowDetails, Season, SeasonDetails as SeasonDetailsType, Episode, Video, WatchProviders as WatchProvidersType, ProductionCompany, PersonCombinedCreditsCast, Movie, TVShow, Review, PagedResponse } from '@/lib/tmdb-schemas';
 import { slugify, formatRuntime, getBackdropImage, getPosterImage, getProfileImage } from '@/lib/utils';
 import { StarRating, PosterCard } from '@/components/media';
 import { Badge } from '@/components/ui/badge';
@@ -13,13 +13,11 @@ import { Card, ScrollArea, AspectRatio, Avatar, AvatarFallback, AvatarImage, Car
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/forms';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlayButton } from '@/components/PlayerModal';
-import { Carousel, ShadcnCarousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { ShadcnCarousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialogs';
 import { ChevronLeft, ChevronRight, PlayCircle, Loader2, Star, Info } from 'lucide-react';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchTMDB } from '@/lib/tmdb-client';
-import { pagedResponseSchema, movieSchema, tvSchema, reviewSchema, seasonDetailsSchema } from '@/lib/tmdb-schemas';
 
 //================================================================//
 // GEO / LLM SUMMARY BLOCK
@@ -234,38 +232,54 @@ export function CreditsCarousel({ credits, title }: CreditsCarouselProps) {
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
-      <Carousel>
-        {filteredCredits.slice(0, 20).map((person) => (
-          <div key={person.id} className="w-[140px]">
-            <div className="group">
-              <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
-                <div className="aspect-[2/3] relative bg-muted transition-transform duration-300 ease-in-out group-hover:scale-105 shadow-md rounded-poster overflow-hidden">
-                  <Image
-                    src={getProfileImage(person.profile_path)}
-                    alt={`Photo of ${person.name}`}
-                    title={`Photo of ${person.name}`}
-                    fill
-                    loading="lazy"
-                    className="object-cover rounded-poster"
-                    sizes="(max-width: 768px) 30vw, 15vw"
-                    data-ai-hint="person portrait"
-                  />
+      <div className="relative overflow-hidden">
+        <ShadcnCarousel
+          opts={{
+            align: 'start',
+            loop: false,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-4 px-4 sm:px-8 items-start">
+            {filteredCredits.slice(0, 20).map((person) => (
+              <CarouselItem key={person.id} className="pl-4 basis-auto" style={{ flex: '0 0 140px' }}>
+                <div className="group">
+                  <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
+                    <div className="aspect-[2/3] relative bg-muted transition-transform duration-300 ease-in-out group-hover:scale-105 shadow-md rounded-poster overflow-hidden">
+                      <Image
+                        src={getProfileImage(person.profile_path)}
+                        alt={`Photo of ${person.name}`}
+                        title={`Photo of ${person.name}`}
+                        fill
+                        loading="lazy"
+                        className="object-cover rounded-poster"
+                        sizes="(max-width: 768px) 30vw, 15vw"
+                        data-ai-hint="person portrait"
+                      />
+                    </div>
+                  </Link>
+                  <div className="mt-2 text-sm text-center">
+                    <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
+                      <h3 className="font-bold line-clamp-1 group-hover:text-primary transition-colors">
+                        {person.name}
+                      </h3>
+                    </Link>
+                    <p className="text-muted-foreground line-clamp-1">
+                      {person.character || person.job}
+                    </p>
+                  </div>
                 </div>
-              </Link>
-              <div className="mt-2 text-sm text-center">
-                <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
-                  <h3 className="font-bold line-clamp-1 group-hover:text-primary transition-colors">
-                    {person.name}
-                  </h3>
-                </Link>
-                <p className="text-muted-foreground line-clamp-1">
-                  {person.character || person.job}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </Carousel>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="absolute left-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+            <ChevronLeft className="h-6 w-6" />
+          </CarouselPrevious>
+          <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+            <ChevronRight className="h-6 w-6" />
+          </CarouselNext>
+        </ShadcnCarousel>
+      </div>
     </section>
   );
 }
@@ -299,7 +313,7 @@ export function SeasonsDisplay({ seasons, showId, showName, initialData }: Seaso
 
     setIsLoading(true);
     try {
-      const details = await fetchTMDB(`tv/${showId}/season/${seasonNumber}`, {}, seasonDetailsSchema);
+      const details = await fetchTMDB<SeasonDetailsType>(`tv/${showId}/season/${seasonNumber}`, {});
       setSeasonDetails(details);
     } catch (error) {
       console.error("Failed to fetch season details", error);
@@ -321,7 +335,7 @@ export function SeasonsDisplay({ seasons, showId, showName, initialData }: Seaso
     <section>
       <div className="flex items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold">Seasons</h2>
-        <Select value={selectedSeasonNumber} onValueChange={handleSeasonChange}>
+        <Select value={selectedSeasonNumber || ''} onValueChange={handleSeasonChange}>
           <SelectTrigger className="w-[180px] bg-secondary border-border">
             <SelectValue placeholder="Select a season" />
           </SelectTrigger>
@@ -510,10 +524,10 @@ export function TrailersCarousel({ videos }: TrailersCarouselProps) {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+        <CarouselPrevious className="absolute left-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
           <ChevronLeft className="h-6 w-6" />
         </CarouselPrevious>
-        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+        <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
           <ChevronRight className="h-6 w-6" />
         </CarouselNext>
       </ShadcnCarousel>
@@ -647,11 +661,27 @@ export function Recommendations({ id, type, initialData }: RecommendationsProps)
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">More Like This</h2>
-      <Carousel>
-        {items.map(item => (
-          <PosterCard key={item.id} item={item} type={'title' in item ? 'movie' : 'tv'} />
-        ))}
-      </Carousel>
+      <ShadcnCarousel
+        opts={{
+          align: 'start',
+          loop: false,
+        }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-4 px-4 sm:px-8 items-start">
+          {items.map(item => (
+            <CarouselItem key={item.id} className="pl-4 basis-auto" style={{ flex: '0 0 190px' }}>
+              <PosterCard item={item} type={'title' in item ? 'movie' : 'tv'} />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="absolute left-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+          <ChevronLeft className="h-6 w-6" />
+        </CarouselPrevious>
+        <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+          <ChevronRight className="h-6 w-6" />
+        </CarouselNext>
+      </ShadcnCarousel>
     </section>
   );
 }
@@ -685,7 +715,7 @@ function CreditRow({ item }: { item: PersonCombinedCreditsCast }) {
   const title = 'title' in item ? item.title : item.name;
   const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
   const year = releaseDate ? new Date(releaseDate).getFullYear() : '----';
-  const href = `/${item.media_type}/${slugify(title)}-${item.id}`;
+  const href = `/${item.media_type}/${slugify(title || '')}-${item.id}`;
 
   return (
     <div className="flex items-center gap-4 text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
@@ -725,10 +755,9 @@ export function Reviews({ id, type, initialData }: ReviewsProps) {
 
     setIsLoading(true);
     try {
-      const data = await fetchTMDB(
+      const data = await fetchTMDB<PagedResponse<Review>>(
         `${type}/${id}/reviews`,
-        { page: page + 1 },
-        pagedResponseSchema(reviewSchema)
+        { page: page + 1 }
       );
 
       if (data) {
@@ -809,7 +838,8 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
   useEffect(() => {
     if (review.created_at) {
-      setFormattedDate(format(new Date(review.created_at), 'MMMM d, yyyy'));
+      const date = new Date(review.created_at);
+      setFormattedDate(new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(date));
     }
   }, [review.created_at]);
 

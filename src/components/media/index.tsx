@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -12,7 +11,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import type { Movie, TVShow, SearchResult, PersonCombinedCreditsCast, CollectionDetails } from '@/lib/tmdb-schemas';
+import type { Movie, TVShow, SearchResult, PersonCombinedCreditsCast, PagedResponse } from '@/lib/tmdb-schemas';
 import { slugify, getPosterImage } from '@/lib/utils';
 import { Star, PlayCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +20,6 @@ import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } 
 import { Card } from '@/components/ui/layout';
 import { cn } from '@/lib/utils';
 import { fetchTMDB } from '@/lib/tmdb-client';
-import { pagedResponseSchema, movieSchema, tvSchema } from '@/lib/tmdb-schemas';
 
 
 //================================================================//
@@ -66,7 +64,7 @@ export function PosterCard({ item, type, imageSize = 'w342' }: PosterCardProps) 
             <h3 className="font-semibold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">{title}</h3>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                 <Star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
-                <span>{item.vote_average.toFixed(1)}</span>
+                <span>{item.vote_average ? item.vote_average.toFixed(1) : '0.0'}</span>
             </div>
         </div>
     </Link>
@@ -123,10 +121,10 @@ export function MediaListItem({ item, type }: MediaListItemProps) {
           <div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <span>{year}</span>
-              {item.vote_average > 0 && (
+              {(item.vote_average || 0) > 0 && (
                 <>
                   <span className="text-xs">•</span>
-                  <StarRating rating={item.vote_average} />
+                  <StarRating rating={item.vote_average || 0} />
                 </>
               )}
             </div>
@@ -213,9 +211,8 @@ export function MediaBrowser({ title, type, genres, countries }: MediaBrowserPro
         params.with_origin_country = currentFilters.country;
     }
     
-    const schema = type === 'movie' ? pagedResponseSchema(movieSchema) : pagedResponseSchema(tvSchema);
-    const data = await fetchTMDB(`discover/${type}`, params, schema);
-    return data || { results: [], total_pages: 1, page: 1 };
+    const data = await fetchTMDB<PagedResponse<Movie | TVShow>>(`discover/${type}`, params);
+    return data || { results: [], total_pages: 1, page: 1, total_results: 0 };
   }, [type]);
 
   const loadInitialItems = useCallback((currentFilters: typeof filters) => {

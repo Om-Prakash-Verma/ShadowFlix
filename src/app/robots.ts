@@ -1,4 +1,3 @@
-
 import { MetadataRoute } from 'next';
 import { siteConfig } from '@/config/site';
 
@@ -10,15 +9,11 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         '/api/',
         '/search/',
-        '/*?*', // Prevent parameter spam
+        '/*?*', // Block parameter spam to save crawl budget
         '/_next/',
         '/static/',
       ],
     },
-    sitemap: [
-      `${siteConfig.url}/sitemap.xml`,
-      `${siteConfig.url}/sitemap-movies.xml`,
-      `${siteConfig.url}/sitemap-tv.xml`
-    ],
+    sitemap: `${siteConfig.url}/sitemap.xml`,
   };
 }

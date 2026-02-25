@@ -1,8 +1,5 @@
-
 import { MediaBrowser } from "@/components/media";
 import { getGenres, getCountries } from "@/lib/tmdb";
-
-export const runtime = 'edge';
 
 export default async function TvShowsPage() {
     const [genres, countries] = await Promise.all([

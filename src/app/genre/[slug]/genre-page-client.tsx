@@ -1,20 +1,18 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import type { Movie, TVShow } from '@/lib/tmdb-schemas';
+import type { Movie, TVShow, PagedResponse } from '@/lib/tmdb-schemas';
 import { MediaListItem, MediaListItemSkeleton, MediaListSkeleton } from '@/components/media';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchTMDB } from '@/lib/tmdb-client';
-import { pagedResponseSchema, movieSchema, tvSchema } from '@/lib/tmdb-schemas';
 
 type MediaItem = Movie | TVShow;
 
 async function fetcher({ genreId, page }: { genreId: string, page: number }): Promise<{ results: MediaItem[], total_pages: number }> {
     const [movieData, tvData] = await Promise.all([
-      fetchTMDB('discover/movie', { with_genres: genreId, page }, pagedResponseSchema(movieSchema)),
-      fetchTMDB('discover/tv', { with_genres: genreId, page }, pagedResponseSchema(tvSchema))
+      fetchTMDB<PagedResponse<Movie>>('discover/movie', { with_genres: genreId, page }),
+      fetchTMDB<PagedResponse<TVShow>>('discover/tv', { with_genres: genreId, page })
     ]);
   
     const results: MediaItem[] = [];

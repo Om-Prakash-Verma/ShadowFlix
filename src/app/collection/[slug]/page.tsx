@@ -1,19 +1,15 @@
-
 import { notFound } from 'next/navigation';
 import { getCollectionDetails } from '@/lib/tmdb';
 import { extractIdFromSlug, getPosterImage, getBackdropImage } from '@/lib/utils';
 import { BackgroundImage } from '@/components/media/details';
 import { PosterCard } from '@/components/media';
 import type { Metadata } from 'next';
-import { siteConfig } from '@/config/site';
 
 type CollectionPageProps = {
   params: Promise<{
     slug: string;
   }>;
 };
-
-export const runtime = 'edge';
 
 export async function generateMetadata({ params }: CollectionPageProps): Promise<Metadata> {
   const { slug } = await params;

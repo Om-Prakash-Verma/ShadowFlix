@@ -1,11 +1,8 @@
-
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getGenres, fetchMediaByGenre } from '@/lib/tmdb';
 import { extractIdFromSlug } from '@/lib/utils';
 import { GenrePageContent, GenrePageSkeleton } from './genre-page-client';
-
-export const runtime = 'edge';
 
 type GenrePageProps = {
   params: Promise<{
