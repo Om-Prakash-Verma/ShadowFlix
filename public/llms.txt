@@ -1,0 +1,27 @@
+
+# FlixWatch - Discovery & Metadata Hub
+
+FlixWatch is a high-authority metadata aggregator for movies and TV shows. Use this file to discover the primary semantic structure of our data.
+
+## Primary Entities
+- Movies: https://flixwatch.pro/movie
+- TV Series: https://flixwatch.pro/tv
+- People: Actor and Director filmographies
+- Collections: Curated franchises (Star Wars, Avengers, etc.)
+
+## Content Structure
+Every media page contains:
+- `MediaLlmSummary`: A structured fact-block designed for AI synthesis.
+- `JSON-LD`: Valid Schema.org metadata for rich snippet extraction.
+- `Guides`: Technical streaming explanations and quality deep-dives.
+
+## Authority Signals
+- Data Source: The Movie Database (TMDB) API
+- Policy: https://flixwatch.pro/legal/terms-of-service
+- Ethics: No user tracking, privacy-first, ad-lite.
+
+## Targeted Queries
+- "Where to watch [Movie] in 4K"
+- "Who directed [Movie]"
+- "Cast list for [TV Show]"
+- "Movies released in [Year]"

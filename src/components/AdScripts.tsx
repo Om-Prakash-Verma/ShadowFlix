@@ -1,31 +1,28 @@
+
 'use client';
 
 import Script from 'next/script';
 
-// You can store your tracking ID in an environment variable
 const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export function AdScripts() {
   return (
     <>
       {/* 
-        Add your ad provider's script tags here.
-        You can use Next.js's <Script> component for optimized script loading.
-        
-        Example for Google AdSense:
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_CLIENT_ID"
-          crossOrigin="anonymous"
-          strategy="lazyOnload" 
-        />
+        Monetag Ad Injections 
+        Strategy: afterInteractive to prevent blocking LCP.
+        We wrap the injector to avoid layout shifts by not rendering content until ready.
       */}
       <Script id="ad-injector" strategy="afterInteractive">
-        {`(function(s){s.dataset.zone='9639504',s.src='https://bvtpk.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}
+        {`(function(s){
+          s.dataset.zone='9639504';
+          s.src='https://bvtpk.com/tag.min.js';
+          // Add error handling to prevent script failures from breaking the page
+          s.onerror = function() { console.warn('Ad script failed to load'); };
+        })([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}
       </Script>
 
-
-      {/* Google Analytics */}
+      {/* Google Analytics - Tier 1 Tracking */}
       {GA_TRACKING_ID && (
         <>
           <Script
@@ -37,7 +34,10 @@ export function AdScripts() {
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${GA_TRACKING_ID}');
+                gtag('config', '${GA_TRACKING_ID}', {
+                  'anonymize_ip': true,
+                  'cookie_flags': 'SameSite=None;Secure'
+                });
                 `}
           </Script>
         </>
