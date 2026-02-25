@@ -8,9 +8,9 @@ import { GenrePageContent, GenrePageSkeleton } from './genre-page-client';
 export const runtime = 'edge';
 
 type GenrePageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 async function getGenreNameFromSlug(slug: string): Promise<string | null> {
@@ -33,7 +33,7 @@ async function getGenreNameFromSlug(slug: string): Promise<string | null> {
 }
 
 export async function generateMetadata({ params }: GenrePageProps): Promise<Metadata> {
-    const { slug } = params;
+    const { slug } = await params;
     const genreId = extractIdFromSlug(slug);
     const genreName = await getGenreNameFromSlug(slug);
 
@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: GenrePageProps): Promise<Meta
 }
 
 export default async function GenrePage({ params }: GenrePageProps) {
-    const { slug } = params;
+    const { slug } = await params;
     const genreId = extractIdFromSlug(slug);
     
     const [initialData, genreName] = await Promise.all([

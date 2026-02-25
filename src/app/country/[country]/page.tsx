@@ -8,13 +8,13 @@ import { CountryPageContent, CountryPageSkeleton } from './country-page-client';
 export const runtime = 'edge';
 
 type CountryPageProps = {
-    params: {
+    params: Promise<{
         country: string;
-    };
+    }>;
 };
 
 export async function generateMetadata({ params }: CountryPageProps): Promise<Metadata> {
-    const countryCode = params.country;
+    const { country: countryCode } = await params;
     const countryName = await getCountryName(countryCode);
 
     if (!countryName) {
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
 
 
 export default async function CountryPage({ params }: CountryPageProps) {
-    const { country } = params;
+    const { country } = await params;
     const initialData = await fetchMediaByCountry({ countryCode: country, page: 1 });
     const countryName = await getCountryName(country);
 

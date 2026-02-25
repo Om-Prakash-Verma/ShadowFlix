@@ -11,15 +11,16 @@ import { Filmography } from '@/components/media/details';
 import type { Person } from 'schema-dts';
 
 type PersonPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export const runtime = 'edge';
 
 export async function generateMetadata({ params }: PersonPageProps): Promise<Metadata> {
-    const personId = extractIdFromSlug(params.slug);
+    const { slug } = await params;
+    const personId = extractIdFromSlug(slug);
     if (!personId) {
         return { title: 'Person not found' };
     }
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: PersonPageProps): Promise<Met
 
     const title = `${person.name} - Filmography`;
     const description = `Explore the full filmography of ${person.name}. Discover all their movies and TV shows, read their biography, and find where to watch their work for free. Known for their role in ${person.known_for_department}.`;
-    const canonicalUrl = `/person/${params.slug}`;
+    const canonicalUrl = `/person/${slug}`;
 
     return {
         title,
@@ -71,7 +72,8 @@ export async function generateMetadata({ params }: PersonPageProps): Promise<Met
 
 
 export default async function PersonPage({ params }: PersonPageProps) {
-    const personId = extractIdFromSlug(params.slug);
+    const { slug } = await params;
+    const personId = extractIdFromSlug(slug);
     if (!personId) {
         notFound();
     }

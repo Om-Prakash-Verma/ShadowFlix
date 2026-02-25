@@ -5,22 +5,24 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import type { Metadata } from 'next';
-export const runtime = 'edge';
+
 type GuideProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export async function generateMetadata({ params }: GuideProps): Promise<Metadata> {
-  const title = params.slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const { slug } = await params;
+  const title = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   return {
     title: `${title} | FlixWatch Guides`,
     description: `Expert insights and tutorials about ${title.toLowerCase()} for the best streaming experience.`,
   };
 }
 
-export default function GuideDetailPage({ params }: GuideProps) {
+export default async function GuideDetailPage({ params }: GuideProps) {
+  const { slug } = await params;
   // Mock content for the programmatic framework
-  const title = params.slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const title = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   return (
     <article className="py-12 px-4 sm:px-8 max-w-3xl mx-auto">

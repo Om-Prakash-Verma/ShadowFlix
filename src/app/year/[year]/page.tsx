@@ -9,13 +9,13 @@ import { YearPageContent, YearPageSkeleton } from './year-page-client';
 export const runtime = 'edge';
 
 type YearPageProps = {
-    params: {
+    params: Promise<{
         year: string;
-    };
+    }>;
 };
 
 export async function generateMetadata({ params }: YearPageProps): Promise<Metadata> {
-    const { year } = params;
+    const { year } = await params;
 
     if (!year || !/^\d{4}$/.test(year)) {
         return { title: 'Invalid Year' };
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: YearPageProps): Promise<Metad
 
 
 export default async function YearPage({ params }: YearPageProps) {
-    const { year } = params;
+    const { year } = await params;
     const initialData = await fetchMediaByYear({ year, page: 1 });
     
     return (

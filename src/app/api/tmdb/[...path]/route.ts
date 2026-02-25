@@ -8,14 +8,15 @@ export const runtime = 'edge';
 
 export async function GET(
   request: Request,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   if (!API_KEY) {
     return new NextResponse('TMDB_API_KEY is not configured', { status: 500 });
   }
 
   const { searchParams } = new URL(request.url);
-  const path = params.path.join('/');
+  const { path: pathSegments } = await params;
+  const path = pathSegments.join('/');
 
   const url = new URL(`${API_BASE_URL}/${path}`);
   url.searchParams.append('api_key', API_KEY);

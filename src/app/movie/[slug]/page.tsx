@@ -8,15 +8,16 @@ import { siteConfig } from '@/config/site';
 import type { Movie as MovieSchema, BreadcrumbList, VideoObject } from 'schema-dts';
 
 type MoviePageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export const runtime = 'edge';
 
 export async function generateMetadata({ params }: MoviePageProps): Promise<Metadata> {
-  const movieId = extractIdFromSlug(params.slug);
+  const { slug } = await params;
+  const movieId = extractIdFromSlug(slug);
   if (!movieId) return { title: 'Movie not found' };
   
   const movie = await getMovieDetails(movieId);
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
   const title = `Watch ${movie.title} (${releaseYear}) Online Free - Full Movie HD | ${siteConfig.name}`;
   const description = `Stream ${movie.title} (${releaseYear}) in stunning 4K/HD quality. ${movie.overview.slice(0, 150)}... No ads, no sign-ups on ${siteConfig.name}.`;
   
-  const canonicalUrl = `${siteConfig.url}/movie/${params.slug}`;
+  const canonicalUrl = `${siteConfig.url}/movie/${slug}`;
 
   return {
     title,
@@ -46,7 +47,8 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
 }
 
 export default async function MoviePage({ params }: MoviePageProps) {
-  const movieId = extractIdFromSlug(params.slug);
+  const { slug } = await params;
+  const movieId = extractIdFromSlug(slug);
   if (!movieId) notFound();
   
   const movie = await getMovieDetails(movieId);
@@ -91,7 +93,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.url },
       { '@type': 'ListItem', position: 2, name: 'Movies', item: `${siteConfig.url}/movie` },
-      { '@type': 'ListItem', position: 3, name: movie.title, item: `${siteConfig.url}/movie/${params.slug}` },
+      { '@type': 'ListItem', position: 3, name: movie.title, item: `${siteConfig.url}/movie/${slug}` },
     ],
   };
 

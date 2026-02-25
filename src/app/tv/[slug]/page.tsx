@@ -1,3 +1,4 @@
+
 import { notFound } from 'next/navigation';
 import { getTVShowDetails, getSeasonDetails, getTvRecommendations, getTvReviews } from '@/lib/tmdb';
 import { extractIdFromSlug, getBackdropImage, getPosterImage, jsonLd } from '@/lib/utils';
@@ -7,15 +8,16 @@ import { siteConfig } from '@/config/site';
 import type { TVSeries, BreadcrumbList } from 'schema-dts';
 
 type TVShowPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export const runtime = 'edge';
 
 export async function generateMetadata({ params }: TVShowPageProps): Promise<Metadata> {
-  const showId = extractIdFromSlug(params.slug);
+  const { slug } = await params;
+  const showId = extractIdFromSlug(slug);
   if (!showId) {
     return { title: 'TV Show not found' };
   }
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }: TVShowPageProps): Promise<Met
     'free streaming site',
   ];
 
-  const canonicalUrl = `${siteConfig.url}/tv/${params.slug}`;
+  const canonicalUrl = `${siteConfig.url}/tv/${slug}`;
 
   return {
     title,
@@ -72,7 +74,8 @@ export async function generateMetadata({ params }: TVShowPageProps): Promise<Met
 }
 
 export default async function TVShowPage({ params }: TVShowPageProps) {
-  const showId = extractIdFromSlug(params.slug);
+  const { slug } = await params;
+  const showId = extractIdFromSlug(slug);
   if (!showId) {
     notFound();
   }
@@ -127,7 +130,7 @@ export default async function TVShowPage({ params }: TVShowPageProps) {
         '@type': 'ListItem',
         position: 3,
         name: show.name,
-        item: `${siteConfig.url}/tv/${params.slug}`,
+        item: `${siteConfig.url}/tv/${slug}`,
       },
     ],
   };

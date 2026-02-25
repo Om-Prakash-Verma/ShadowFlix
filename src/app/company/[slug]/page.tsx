@@ -11,13 +11,14 @@ import { CompanyPageContent, CompanyPageSkeleton } from './company-page-client';
 export const runtime = 'edge';
 
 type CompanyPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export async function generateMetadata({ params }: CompanyPageProps): Promise<Metadata> {
-    const companyId = extractIdFromSlug(params.slug);
+    const { slug } = await params;
+    const companyId = extractIdFromSlug(slug);
     if (!companyId) {
         return { title: 'Company not found' };
     }
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: CompanyPageProps): Promise<Me
     
     const title = `Movies & TV Shows by ${companyDetails.name}`;
     const description = `Browse all movies and TV shows produced by ${companyDetails.name}. Discover their full filmography and find your next watch.`;
-    const canonicalUrl = `/company/${params.slug}`;
+    const canonicalUrl = `/company/${slug}`;
 
     return {
         title,
@@ -58,7 +59,7 @@ export async function generateMetadata({ params }: CompanyPageProps): Promise<Me
 
 
 export default async function CompanyPage({ params }: CompanyPageProps) {
-    const { slug } = params;
+    const { slug } = await params;
     const companyId = extractIdFromSlug(slug);
     
     const [initialData, companyDetails] = await Promise.all([

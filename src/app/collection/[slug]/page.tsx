@@ -8,15 +8,16 @@ import type { Metadata } from 'next';
 import { siteConfig } from '@/config/site';
 
 type CollectionPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export const runtime = 'edge';
 
 export async function generateMetadata({ params }: CollectionPageProps): Promise<Metadata> {
-  const collectionId = extractIdFromSlug(params.slug);
+  const { slug } = await params;
+  const collectionId = extractIdFromSlug(slug);
   if (!collectionId) {
     return { title: 'Collection not found' };
   }
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
 
   const title = `Watch the ${collection.name} Collection`;
   const description = `Browse all ${collection.parts.length} movies from the ${collection.name} collection in order. ${collection.overview}`;
-  const canonicalUrl = `/collection/${params.slug}`;
+  const canonicalUrl = `/collection/${slug}`;
 
   return {
     title,
@@ -74,7 +75,8 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
 }
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
-  const collectionId = extractIdFromSlug(params.slug);
+  const { slug } = await params;
+  const collectionId = extractIdFromSlug(slug);
   if (!collectionId) {
     notFound();
   }
