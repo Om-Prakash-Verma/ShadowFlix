@@ -5,91 +5,69 @@ import { slugify } from '@/lib/utils';
 
 export const runtime = 'edge';
 
-/**
- * Segmented Sitemap Implementation for Enterprise Scale.
- * This allows us to bypass the 50,000 URL limit and improve indexing speed.
- */
-
-export async function generateSitemaps() {
-  return [
-    { id: 'core' },
-    { id: 'movies' },
-    { id: 'tv' },
-    { id: 'hubs' },
-  ];
-}
-
-export default async function sitemap({
-  id,
-}: {
-  id: string;
-}): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
 
-  if (id === 'core') {
-    return [
-      '',
-      '/movie',
-      '/tv',
-      '/guides',
-      '/legal/privacy-policy',
-      '/legal/terms-of-service',
-      '/legal/dmca',
-    ].map((route) => ({
-      url: `${baseUrl}${route}`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: route === '' ? 1 : 0.8,
-    }));
-  }
+  // 1. Core Static Routes
+  const coreRoutes = [
+    '',
+    '/movie',
+    '/tv',
+    '/guides',
+    '/legal/privacy-policy',
+    '/legal/terms-of-service',
+    '/legal/dmca',
+  ].map((route) => ({
+    url: `${baseUrl}${route}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: route === '' ? 1 : 0.8,
+  }));
 
-  if (id === 'movies' || id === 'tv') {
-    const data = await fetchAllHomepageData();
-    const items = id === 'movies' ? [...data.popularMovies, ...data.trendingMovies] : [...data.popularTVShows, ...data.trendingTVShows];
-    
-    return items.map((item) => {
-      const type = 'title' in item ? 'movie' : 'tv';
-      const title = 'title' in item ? item.title : item.name;
-      return {
-        url: `${baseUrl}/${type}/${slugify(title || '')}-${item.id}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      };
-    });
-  }
+  // 2. Fetch data for dynamic segments
+  // We fetch key data to populate the most important URLs in a single sitemap
+  const [data, movieGenres, tvGenres, countries] = await Promise.all([
+    fetchAllHomepageData(),
+    getGenres('movie'),
+    getGenres('tv'),
+    getCountries(),
+  ]);
 
-  if (id === 'hubs') {
-    const [movieGenres, tvGenres, countries] = await Promise.all([
-      getGenres('movie'),
-      getGenres('tv'),
-      getCountries(),
-    ]);
+  // 3. Movies & TV Shows (Popular/Trending)
+  const movieRoutes = [...data.popularMovies, ...data.trendingMovies].map((item) => ({
+    url: `${baseUrl}/movie/${slugify(item.title || '')}-${item.id}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
 
-    const genreRoutes = Object.entries({ ...movieGenres, ...tvGenres }).map(([id, name]) => ({
-      url: `${baseUrl}/genre/${slugify(name || '')}-${id}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    }));
+  const tvRoutes = [...data.popularTVShows, ...data.trendingTVShows].map((item) => ({
+    url: `${baseUrl}/tv/${slugify(item.name || '')}-${item.id}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
 
-    const countryRoutes = Object.keys(countries).map((code) => ({
-      url: `${baseUrl}/country/${code}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.5,
-    }));
+  // 4. Hub Pages (Genres & Top Countries)
+  const genreRoutes = Object.entries({ ...movieGenres, ...tvGenres }).map(([id, name]) => ({
+    url: `${baseUrl}/genre/${slugify(name || '')}-${id}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }));
 
-    const currentYear = new Date().getFullYear();
-    const yearRoutes = Array.from({ length: 20 }, (_, i) => ({
-      url: `${baseUrl}/year/${currentYear - i}`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    }));
+  const countryRoutes = Object.keys(countries).slice(0, 50).map((code) => ({
+    url: `${baseUrl}/country/${code}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
+  }));
 
-    return [...genreRoutes, ...countryRoutes, ...yearRoutes];
-  }
-
-  return [];
+  return [
+    ...coreRoutes,
+    ...movieRoutes,
+    ...tvRoutes,
+    ...genreRoutes,
+    ...countryRoutes,
+  ];
 }
