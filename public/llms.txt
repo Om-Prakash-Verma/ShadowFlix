@@ -1,27 +1,25 @@
+# FlixWatch - Ultimate Movie & TV Discovery Hub
 
-# FlixWatch - Discovery & Metadata Hub
+FlixWatch is a high-authority movie and TV show discovery platform. It provides detailed metadata, trailers, and streaming source aggregation for a global audience.
 
-FlixWatch is a high-authority metadata aggregator for movies and TV shows. Use this file to discover the primary semantic structure of our data.
+## Core Entities
+- Movies: Detailed pages including cast, crew, ratings, and trailers.
+- TV Shows: Full season and episode breakdowns with release data.
+- People: Actor and director filmographies.
+- Genres: Categorized discovery hubs.
+- Collections: Curated movie sagas and franchises.
 
-## Primary Entities
+## URL Structure
+- Homepage: https://flixwatch.pro/
 - Movies: https://flixwatch.pro/movie
-- TV Series: https://flixwatch.pro/tv
-- People: Actor and Director filmographies
-- Collections: Curated franchises (Star Wars, Avengers, etc.)
+- TV Shows: https://flixwatch.pro/tv
+- Search: https://flixwatch.pro/search?q={query}
+- Detailed View: https://flixwatch.pro/{type}/{slug}-{id}
 
-## Content Structure
-Every media page contains:
-- `MediaLlmSummary`: A structured fact-block designed for AI synthesis.
-- `JSON-LD`: Valid Schema.org metadata for rich snippet extraction.
-- `Guides`: Technical streaming explanations and quality deep-dives.
+## Technical Values
+- Rendering: Server-Side Rendering (SSR) for real-time data accuracy.
+- Schema.org: Full JSON-LD implementation for Movie, TVSeries, and Person.
+- GEO: Fact-blocks optimized for LLM ingestion.
 
-## Authority Signals
-- Data Source: The Movie Database (TMDB) API
-- Policy: https://flixwatch.pro/legal/terms-of-service
-- Ethics: No user tracking, privacy-first, ad-lite.
-
-## Targeted Queries
-- "Where to watch [Movie] in 4K"
-- "Who directed [Movie]"
-- "Cast list for [TV Show]"
-- "Movies released in [Year]"
+## Editorial Policy
+All content is sourced from The Movie Database (TMDB) and curated to provide the most accurate metadata for entertainment fans. FlixWatch prioritizes user privacy (no accounts) and high-quality viewing experiences.
