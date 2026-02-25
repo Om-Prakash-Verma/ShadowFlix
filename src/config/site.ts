@@ -1,4 +1,3 @@
-
 type NavItem = {
   title: string;
   href: string;
@@ -6,9 +5,9 @@ type NavItem = {
 };
 
 export const siteConfig = {
-    name: process.env.NEXT_PUBLIC_SITE_NAME || 'FlixWatch',
-    description: 'FlixWatch is the ultimate destination to discover and watch your favorite movies and TV shows online for free in stunning 4K quality. No ads, no subscriptions, just pure entertainment.',
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://flixwatch.pro',
+    name: process.env.NEXT_PUBLIC_SITE_NAME || 'Flix',
+    description: 'Watch your favorite movies and TV shows online for free in stunning 4K quality. No ads, no subscriptions. Just endless entertainment.',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://flix.example.com',
     mainNav: [
       {
         title: 'Explore',
@@ -24,11 +23,6 @@ export const siteConfig = {
         title: 'TV Shows',
         href: '/tv',
         icon: 'tv',
-      },
-      {
-        title: 'Guides',
-        href: '/guides',
-        icon: 'book-open',
       },
     ] satisfies NavItem[],
     footerNav: [
@@ -56,3 +50,4 @@ export const siteConfig = {
   };
   
   export type SiteConfig = typeof siteConfig;
+  

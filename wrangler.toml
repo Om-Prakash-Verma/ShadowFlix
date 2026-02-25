@@ -1,3 +1,7 @@
-name = "shadowflix"
+
+name = "flix"
 compatibility_date = "2024-05-20"
-pages_build_output_dir = ".vercel/output/static"
+
+[pages]
+routes.include = ["/*"]
+routes.exclude = ["/favicon.ico", "/_next/*"]

@@ -2,7 +2,7 @@
 'use server';
 
 import { getCollectionDetails } from '@/lib/tmdb';
-import { CarouselProvider as ShadcnCarousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { ShadcnCarousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getBackdropImage, slugify } from '@/lib/utils';

@@ -5,84 +5,26 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useInView } from 'react-intersection-observer';
-import type { CastMember, MovieDetails, TVShowDetails, Season, SeasonDetails as SeasonDetailsType, Episode, Video, WatchProviders as WatchProvidersType, ProductionCompany, PersonCombinedCreditsCast, Movie, TVShow, Review, PagedResponse } from '@/lib/tmdb-schemas';
+import type { CastMember, MovieDetails, TVShowDetails, Season, SeasonDetails as SeasonDetailsType, Episode, Video, WatchProviders as WatchProvidersType, ProductionCompany, PersonCombinedCreditsCast, Movie, TVShow, Review } from '@/lib/tmdb-schemas';
 import { slugify, formatRuntime, getBackdropImage, getPosterImage, getProfileImage } from '@/lib/utils';
-import { StarRating } from '@/components/media/star-rating';
-import { PosterCard } from '@/components/media/poster-card';
+import { StarRating, PosterCard } from '@/components/media';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, ScrollArea, AspectRatio, Avatar, AvatarFallback, AvatarImage, CardContent, CardFooter, CardHeader } from '@/components/ui/layout';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/forms';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlayButton } from '@/components/PlayerModal';
-import { CarouselProvider, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, PlayCircle, Loader2, Star, Info } from 'lucide-react';
+import { Carousel, ShadcnCarousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialogs';
+import { ChevronLeft, ChevronRight, PlayCircle, Loader2, Star } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchTMDB } from '@/lib/tmdb-client';
+import { pagedResponseSchema, movieSchema, tvSchema, reviewSchema, seasonDetailsSchema } from '@/lib/tmdb-schemas';
+
 
 //================================================================//
-// GEO / LLM SUMMARY BLOCK
-//================================================================//
-
-export function MediaLlmSummary({ item, type }: { item: MovieDetails | TVShowDetails, type: 'movie' | 'tv' }) {
-  const isMovie = (item: MovieDetails | TVShowDetails): item is MovieDetails => type === 'movie';
-  const title = isMovie(item) ? item.title : item.name;
-  const year = isMovie(item) ? item.release_date.split('-')[0] : item.first_air_date.split('-')[0];
-  const director = item.credits.crew.find(c => c.job === 'Director')?.name || 'N/A';
-  const mainCast = item.credits.cast.slice(0, 3).map(c => c.name).join(', ');
-  const genres = item.genres.map(g => g.name).join(', ');
-
-  return (
-    <div className="glass-card p-6 rounded-xl border border-primary/20 mb-8 overflow-hidden relative group">
-      <div className="absolute top-0 right-0 p-3 text-primary/30 group-hover:text-primary transition-colors">
-        <Info className="w-6 h-6" />
-      </div>
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <span className="text-primary">Quick Facts</span> & LLM Overview
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-foreground/80">
-            <strong>{title} ({year})</strong> is a <strong>{genres}</strong> {type === 'movie' ? 'film' : 'series'}
-            {isMovie(item) ? ` directed by ${director}` : ''}. 
-            Starring {mainCast}, this production holds a rating of {item.vote_average.toFixed(1)}/10 on TMDB. 
-            The plot follows: {item.overview.slice(0, 200)}...
-          </p>
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Badge variant="secondary">Direct Link</Badge>
-            <Badge variant="secondary">No Sign-up</Badge>
-            <Badge variant="secondary">4K Streaming</Badge>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4 text-xs">
-          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
-            <span className="text-muted-foreground block mb-1">Director / Creator</span>
-            <span className="font-bold">{director}</span>
-          </div>
-          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
-            <span className="text-muted-foreground block mb-1">Status</span>
-            <span className="font-bold">{item.status}</span>
-          </div>
-          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
-            <span className="text-muted-foreground block mb-1">Score</span>
-            <span className="font-bold">{item.vote_average.toFixed(1)} / 10</span>
-          </div>
-          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
-            <span className="text-muted-foreground block mb-1">Language</span>
-            <span className="font-bold uppercase">{item.production_companies[0]?.origin_country || 'EN'}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-//================================================================//
-// MEDIA HERO
+// 1. MEDIA HERO
 //================================================================//
 
 type MediaHeroProps = {
@@ -183,7 +125,7 @@ export function MediaHero({ item, type }: MediaHeroProps) {
 }
 
 //================================================================//
-// 2. BACKGROUND IMAGE
+// 2. BACKGROUND IMAGE (From src/components/BackgroundImage.tsx)
 //================================================================//
 
 type BackgroundImageProps = {
@@ -237,54 +179,38 @@ export function CreditsCarousel({ credits, title }: CreditsCarouselProps) {
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
-      <div className="relative overflow-hidden">
-        <CarouselProvider
-          opts={{
-            align: 'start',
-            loop: false,
-          }}
-          className="w-full"
-        >
-          <CarouselContent className="-ml-4 px-4 sm:px-8 items-start">
-            {filteredCredits.slice(0, 20).map((person) => (
-              <CarouselItem key={person.id} className="pl-4 basis-auto" style={{ flex: '0 0 140px' }}>
-                <div className="group">
-                  <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
-                    <div className="aspect-[2/3] relative bg-muted transition-transform duration-300 ease-in-out group-hover:scale-105 shadow-md rounded-poster overflow-hidden">
-                      <Image
-                        src={getProfileImage(person.profile_path)}
-                        alt={`Photo of ${person.name}`}
-                        title={`Photo of ${person.name}`}
-                        fill
-                        loading="lazy"
-                        className="object-cover rounded-poster"
-                        sizes="(max-width: 768px) 30vw, 15vw"
-                        data-ai-hint="person portrait"
-                      />
-                    </div>
-                  </Link>
-                  <div className="mt-2 text-sm text-center">
-                    <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
-                      <h3 className="font-bold line-clamp-1 group-hover:text-primary transition-colors">
-                        {person.name}
-                      </h3>
-                    </Link>
-                    <p className="text-muted-foreground line-clamp-1">
-                      {person.character || person.job}
-                    </p>
-                  </div>
+      <Carousel>
+        {filteredCredits.slice(0, 20).map((person) => (
+          <div key={person.id} className="w-[140px]">
+            <div className="group">
+              <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
+                <div className="aspect-[2/3] relative bg-muted transition-transform duration-300 ease-in-out group-hover:scale-105 shadow-md rounded-poster overflow-hidden">
+                  <Image
+                    src={getProfileImage(person.profile_path)}
+                    alt={`Photo of ${person.name}`}
+                    title={`Photo of ${person.name}`}
+                    fill
+                    loading="lazy"
+                    className="object-cover rounded-poster"
+                    sizes="(max-width: 768px) 30vw, 15vw"
+                    data-ai-hint="person portrait"
+                  />
                 </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="absolute left-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
-            <ChevronLeft className="h-6 w-6" />
-          </CarouselPrevious>
-          <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
-            <ChevronRight className="h-6 w-6" />
-          </CarouselNext>
-        </CarouselProvider>
-      </div>
+              </Link>
+              <div className="mt-2 text-sm text-center">
+                <Link href={`/person/${slugify(person.name)}-${person.id}`} prefetch={false}>
+                  <h3 className="font-bold line-clamp-1 group-hover:text-primary transition-colors">
+                    {person.name}
+                  </h3>
+                </Link>
+                <p className="text-muted-foreground line-clamp-1">
+                  {person.character || person.job}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </Carousel>
     </section>
   );
 }
@@ -318,7 +244,7 @@ export function SeasonsDisplay({ seasons, showId, showName, initialData }: Seaso
 
     setIsLoading(true);
     try {
-      const details = await fetchTMDB<SeasonDetailsType>(`tv/${showId}/season/${seasonNumber}`, {});
+      const details = await fetchTMDB(`tv/${showId}/season/${seasonNumber}`, {}, seasonDetailsSchema);
       setSeasonDetails(details);
     } catch (error) {
       console.error("Failed to fetch season details", error);
@@ -340,7 +266,7 @@ export function SeasonsDisplay({ seasons, showId, showName, initialData }: Seaso
     <section>
       <div className="flex items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold">Seasons</h2>
-        <Select value={selectedSeasonNumber || ''} onValueChange={handleSeasonChange}>
+        <Select value={selectedSeasonNumber} onValueChange={handleSeasonChange}>
           <SelectTrigger className="w-[180px] bg-secondary border-border">
             <SelectValue placeholder="Select a season" />
           </SelectTrigger>
@@ -491,7 +417,7 @@ export function TrailersCarousel({ videos }: TrailersCarouselProps) {
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">Trailers & Videos</h2>
-      <CarouselProvider
+      <ShadcnCarousel
         opts={{
           align: 'start',
           loop: false,
@@ -529,13 +455,13 @@ export function TrailersCarousel({ videos }: TrailersCarouselProps) {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
           <ChevronLeft className="h-6 w-6" />
         </CarouselPrevious>
-        <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
+        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
           <ChevronRight className="h-6 w-6" />
         </CarouselNext>
-      </CarouselProvider>
+      </ShadcnCarousel>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         {selectedVideo && (
@@ -645,7 +571,7 @@ export function ProductionCompanies({ companies }: ProductionCompaniesProps) {
 
 
 //================================================================//
-// 8. RECOMMENDATIONS
+// 8. RECOMMENDATIONS (From src/components/Recommendations.tsx)
 //================================================================//
 
 type RecommendationsProps = {
@@ -666,27 +592,11 @@ export function Recommendations({ id, type, initialData }: RecommendationsProps)
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">More Like This</h2>
-      <CarouselProvider
-        opts={{
-          align: 'start',
-          loop: false,
-        }}
-        className="w-full"
-      >
-        <CarouselContent className="-ml-4 px-4 sm:px-8 items-start">
-          {items.map(item => (
-            <CarouselItem key={item.id} className="pl-4 basis-auto" style={{ flex: '0 0 190px' }}>
-              <PosterCard item={item} type={'title' in item ? 'movie' : 'tv'} />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="absolute left-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
-          <ChevronLeft className="h-6 w-6" />
-        </CarouselPrevious>
-        <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
-          <ChevronRight className="h-6 w-6" />
-        </CarouselNext>
-      </CarouselProvider>
+      <Carousel>
+        {items.map(item => (
+          <PosterCard key={item.id} item={item} type={'title' in item ? 'movie' : 'tv'} />
+        ))}
+      </Carousel>
     </section>
   );
 }
@@ -720,7 +630,7 @@ function CreditRow({ item }: { item: PersonCombinedCreditsCast }) {
   const title = 'title' in item ? item.title : item.name;
   const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
   const year = releaseDate ? new Date(releaseDate).getFullYear() : '----';
-  const href = `/${item.media_type}/${slugify(title || '')}-${item.id}`;
+  const href = `/${item.media_type}/${slugify(title)}-${item.id}`;
 
   return (
     <div className="flex items-center gap-4 text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
@@ -734,7 +644,7 @@ function CreditRow({ item }: { item: PersonCombinedCreditsCast }) {
 }
 
 //================================================================//
-// 10. REVIEWS
+// 10. REVIEWS (From src/components/Reviews.tsx)
 //================================================================//
 
 type ReviewsProps = {
@@ -760,9 +670,10 @@ export function Reviews({ id, type, initialData }: ReviewsProps) {
 
     setIsLoading(true);
     try {
-      const data = await fetchTMDB<PagedResponse<Review>>(
+      const data = await fetchTMDB(
         `${type}/${id}/reviews`,
-        { page: page + 1 }
+        { page: page + 1 },
+        pagedResponseSchema(reviewSchema)
       );
 
       if (data) {
@@ -843,8 +754,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
   useEffect(() => {
     if (review.created_at) {
-      const date = new Date(review.created_at);
-      setFormattedDate(new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(date));
+      setFormattedDate(format(new Date(review.created_at), 'MMMM d, yyyy'));
     }
   }, [review.created_at]);
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -8,13 +9,13 @@ import { Button } from '@/components/ui/button';
 import { type Movie, type TVShow, type SearchResult } from '@/lib/tmdb-schemas';
 import { slugify, getBackdropImage, getPosterImage } from '@/lib/utils';
 import { Info, PlayCircle } from 'lucide-react';
-import { StarRating } from '@/components/media/star-rating';
-import { Badge } from '@/components/ui/badge';
+import { StarRating } from './media';
+import { Badge } from './ui/badge';
 import { ServerSelectionModal } from './PlayerModal';
 import type { PlayerModalInfo } from './PlayerModal';
 import type { EmblaCarouselType } from 'embla-carousel-react';
 import {
-  CarouselProvider as ShadcnCarousel,
+  ShadcnCarousel,
   CarouselContent,
   CarouselItem,
 } from '@/components/ui/carousel';

@@ -1,20 +1,23 @@
+
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getCompanyDetails, fetchMediaByCompany } from '@/lib/tmdb';
+import { MediaListSkeleton } from '@/components/media';
+import { Skeleton } from '@/components/ui/skeleton';
 import { extractIdFromSlug, getPosterImage } from '@/lib/utils';
+import { siteConfig } from '@/config/site';
 import { CompanyPageContent, CompanyPageSkeleton } from './company-page-client';
 
 export const runtime = 'edge';
 
 type CompanyPageProps = {
-  params: Promise<{
+  params: {
     slug: string;
-  }>;
+  };
 };
 
 export async function generateMetadata({ params }: CompanyPageProps): Promise<Metadata> {
-    const { slug } = await params;
-    const companyId = extractIdFromSlug(slug);
+    const companyId = extractIdFromSlug(params.slug);
     if (!companyId) {
         return { title: 'Company not found' };
     }
@@ -26,7 +29,7 @@ export async function generateMetadata({ params }: CompanyPageProps): Promise<Me
     
     const title = `Movies & TV Shows by ${companyDetails.name}`;
     const description = `Browse all movies and TV shows produced by ${companyDetails.name}. Discover their full filmography and find your next watch.`;
-    const canonicalUrl = `/company/${slug}`;
+    const canonicalUrl = `/company/${params.slug}`;
 
     return {
         title,
@@ -55,7 +58,7 @@ export async function generateMetadata({ params }: CompanyPageProps): Promise<Me
 
 
 export default async function CompanyPage({ params }: CompanyPageProps) {
-    const { slug } = await params;
+    const { slug } = params;
     const companyId = extractIdFromSlug(slug);
     
     const [initialData, companyDetails] = await Promise.all([

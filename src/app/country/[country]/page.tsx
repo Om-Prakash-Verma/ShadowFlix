@@ -1,18 +1,20 @@
+
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getCountryName, fetchMediaByCountry } from '@/lib/tmdb';
+import { siteConfig } from '@/config/site';
 import { CountryPageContent, CountryPageSkeleton } from './country-page-client';
 
 export const runtime = 'edge';
 
 type CountryPageProps = {
-    params: Promise<{
+    params: {
         country: string;
-    }>;
+    };
 };
 
 export async function generateMetadata({ params }: CountryPageProps): Promise<Metadata> {
-    const { country: countryCode } = await params;
+    const countryCode = params.country;
     const countryName = await getCountryName(countryCode);
 
     if (!countryName) {
@@ -44,7 +46,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
 
 
 export default async function CountryPage({ params }: CountryPageProps) {
-    const { country } = await params;
+    const { country } = params;
     const initialData = await fetchMediaByCountry({ countryCode: country, page: 1 });
     const countryName = await getCountryName(country);
 

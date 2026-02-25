@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
@@ -9,6 +10,8 @@ import { MediaListItem, MediaListItemSkeleton } from '@/components/media';
 import { PersonListItem, PersonListItemSkeleton } from '@/components/PersonListItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SearchInput } from '@/components/SearchInput';
+
+export const runtime = 'edge';
 
 function SearchPageContent() {
   const searchParams = useSearchParams();

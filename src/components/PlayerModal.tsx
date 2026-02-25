@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -5,26 +7,27 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  DialogHeader,
-  DialogDescription,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Skeleton } from '@/components/ui/skeleton';
+  DialogHeader,
+  DialogDescription,
+  DialogTrigger,
+} from '@/components/ui/dialogs';
+import { Skeleton } from './ui/skeleton';
 import { serverList, type Server } from '@/lib/serverList';
 import { getExternalIds, getEmbedFallback, type EmbedFallbackInput } from '@/lib/tmdb';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Check, ShieldCheck, PlayCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { Switch, Label } from './ui/forms';
+
+//================================================================//
+// 1. TYPE DEFINITIONS
+//================================================================//
 
 export type PlayerModalInfo = {
   tmdbId: string;
@@ -41,6 +44,10 @@ type PlayerModalProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
+
+//================================================================//
+// 2. MAIN PLAYER MODAL COMPONENT (Entry Point)
+//================================================================//
 export function PlayerModal({ playerInfo, initialServer, isOpen, onOpenChange }: PlayerModalProps) {
   if (!isOpen) return null;
 
@@ -54,6 +61,10 @@ export function PlayerModal({ playerInfo, initialServer, isOpen, onOpenChange }:
     </Dialog>
   );
 }
+
+//================================================================//
+// 3. PLAYER MODAL CONTENT (Main Logic)
+//================================================================//
 
 type PlayerModalContentProps = {
   playerInfo: PlayerModalInfo;
@@ -73,7 +84,7 @@ function PlayerModalContent({ playerInfo, initialServer, onClose }: PlayerModalC
 
   const toggleSandbox = () => {
     setIsSandboxed(prev => !prev);
-    setIframeKey(prev => prev + 1);
+    setIframeKey(prev => prev + 1); // This forces the iframe to re-render
   };
 
   const handleServerChange = (serverName: string) => {
@@ -112,6 +123,7 @@ function PlayerModalContent({ playerInfo, initialServer, onClose }: PlayerModalC
     }
   }, [currentServer.name, playerInfo, toast]);
 
+
   useEffect(() => {
     const updateUrl = async () => {
       setIsLoading(true);
@@ -132,6 +144,7 @@ function PlayerModalContent({ playerInfo, initialServer, onClose }: PlayerModalC
               ? currentServer.movieLink(currentImdbId)
               : currentServer.episodeLink(currentImdbId, playerInfo.season!, playerInfo.episode!);
           } else {
+            console.error('IMDB ID required but not found for server:', currentServer.name);
             handleFallback();
             return;
           }
@@ -142,13 +155,15 @@ function PlayerModalContent({ playerInfo, initialServer, onClose }: PlayerModalC
         }
         setCurrentUrl(url);
       } catch (error) {
+        console.error('Error setting server URL:', error);
         handleFallback();
       } finally {
         setIsLoading(false);
       }
     };
     updateUrl();
-  }, [currentServer, playerInfo, imdbId, handleFallback]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentServer, playerInfo, imdbId]);
 
   return (
     <DialogContent className="bg-black border-none p-0 max-w-full w-full h-full flex flex-col gap-0 rounded-none">
@@ -179,6 +194,10 @@ function PlayerModalContent({ playerInfo, initialServer, onClose }: PlayerModalC
   );
 }
 
+//================================================================//
+// 4. FULLSCREEN VIDEO PLAYER (Iframe Renderer)
+//================================================================//
+
 type FullscreenVideoPlayerProps = {
   src: string;
   title: string;
@@ -188,13 +207,14 @@ type FullscreenVideoPlayerProps = {
 
 function FullscreenVideoPlayer({ src, title, isSandboxed, iframeKey }: FullscreenVideoPlayerProps) {
   const sandboxProps = {
+    // This specific sandbox configuration is required for many embed sources.
     sandbox: "allow-forms allow-scripts allow-pointer-lock allow-same-origin allow-top-navigation",
   };
 
   return (
     <div className="absolute inset-0 w-full h-full bg-black">
       <iframe
-        key={iframeKey}
+        key={iframeKey} // Force re-render on key change to apply/remove sandbox
         src={src}
         title={title}
         className="w-full h-full border-0"
@@ -205,6 +225,11 @@ function FullscreenVideoPlayer({ src, title, isSandboxed, iframeKey }: Fullscree
     </div>
   );
 }
+
+
+//================================================================//
+// 5. PLAYER UI (Overlay Controls)
+//================================================================//
 
 type PlayerUIProps = {
   title: string;
@@ -229,6 +254,8 @@ function PlayerUI({
 }: PlayerUIProps) {
   return (
     <div className="absolute inset-0 pointer-events-none">
+
+      {/* Top bar - re-enable pointer events here */}
       <div className="absolute top-0 left-0 right-0 p-2 md:p-4 bg-gradient-to-b from-black/70 to-transparent flex justify-between items-center gap-2 pointer-events-auto">
         <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
           <Button
@@ -322,6 +349,28 @@ function PlayerUI({
     </div>
   );
 }
+
+
+//================================================================//
+// 6. SKELETON LOADER
+//================================================================//
+
+function PlayerSkeleton() {
+  return (
+    <DialogContent className="bg-black/80 border-neutral-800 p-0 max-w-[90vw] h-[90vh] flex flex-col gap-0 rounded-lg overflow-hidden backdrop-blur-xl">
+      <div className="p-4 flex-row justify-between items-center border-b border-neutral-700/80 space-y-0">
+        <Skeleton className="h-6 w-48" />
+      </div>
+      <div className="flex-grow bg-black/50 relative">
+        <Skeleton className="absolute inset-0" />
+      </div>
+    </DialogContent>
+  );
+}
+
+//================================================================//
+// 7. SERVER SELECTION MODAL & PLAY BUTTON
+//================================================================//
 
 type ServerSelectionModalProps = {
   playerInfo: PlayerModalInfo;
@@ -418,3 +467,6 @@ export function PlayButton({ title, mediaType, tmdbId, season, episode, children
     </ServerSelectionModal>
   );
 }
+
+
+

@@ -1,18 +1,21 @@
+
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import type { Movie, TVShow } from '@/lib/tmdb-schemas';
 import { fetchMediaByYear } from '@/lib/tmdb';
+import { siteConfig } from '@/config/site';
 import { YearPageContent, YearPageSkeleton } from './year-page-client';
 
 export const runtime = 'edge';
 
 type YearPageProps = {
-    params: Promise<{
+    params: {
         year: string;
-    }>;
+    };
 };
 
 export async function generateMetadata({ params }: YearPageProps): Promise<Metadata> {
-    const { year } = await params;
+    const { year } = params;
 
     if (!year || !/^\d{4}$/.test(year)) {
         return { title: 'Invalid Year' };
@@ -43,7 +46,7 @@ export async function generateMetadata({ params }: YearPageProps): Promise<Metad
 
 
 export default async function YearPage({ params }: YearPageProps) {
-    const { year } = await params;
+    const { year } = params;
     const initialData = await fetchMediaByYear({ year, page: 1 });
     
     return (

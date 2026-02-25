@@ -1,3 +1,4 @@
+
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getGenres, fetchMediaByGenre } from '@/lib/tmdb';
@@ -7,9 +8,9 @@ import { GenrePageContent, GenrePageSkeleton } from './genre-page-client';
 export const runtime = 'edge';
 
 type GenrePageProps = {
-  params: Promise<{
+  params: {
     slug: string;
-  }>;
+  };
 };
 
 async function getGenreNameFromSlug(slug: string): Promise<string | null> {
@@ -32,7 +33,7 @@ async function getGenreNameFromSlug(slug: string): Promise<string | null> {
 }
 
 export async function generateMetadata({ params }: GenrePageProps): Promise<Metadata> {
-    const { slug } = await params;
+    const { slug } = params;
     const genreId = extractIdFromSlug(slug);
     const genreName = await getGenreNameFromSlug(slug);
 
@@ -64,7 +65,7 @@ export async function generateMetadata({ params }: GenrePageProps): Promise<Meta
 }
 
 export default async function GenrePage({ params }: GenrePageProps) {
-    const { slug } = await params;
+    const { slug } = params;
     const genreId = extractIdFromSlug(slug);
     
     const [initialData, genreName] = await Promise.all([

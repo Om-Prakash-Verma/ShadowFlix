@@ -1,30 +1,23 @@
+
+
 import { notFound } from 'next/navigation';
 import { getTVShowDetails, getSeasonDetails, getTvRecommendations, getTvReviews } from '@/lib/tmdb';
 import { extractIdFromSlug, getBackdropImage, getPosterImage, jsonLd } from '@/lib/utils';
-import { CreditsCarousel } from '@/components/media/details/credits-carousel';
-import { SeasonsDisplay } from '@/components/media/details/seasons-display';
-import { BackgroundImage } from '@/components/media/details/background-image';
-import { MediaHero } from '@/components/media/details/media-hero';
-import { TrailersCarousel } from '@/components/media/details/trailers-carousel';
-import { Recommendations } from '@/components/media/details/recommendations';
-import { Reviews } from '@/components/media/details/reviews';
-import { MediaLlmSummary } from '@/components/media/details/media-llm-summary';
-import { WatchProviders } from '@/components/media/details/watch-providers';
+import { CreditsCarousel, SeasonsDisplay, BackgroundImage, MediaHero, TrailersCarousel, WatchProviders, Recommendations, Reviews } from '@/components/media/details';
 import type { Metadata } from 'next';
 import { siteConfig } from '@/config/site';
-import type { TVSeries, BreadcrumbList } from 'schema-dts';
+import type { TVSeries } from 'schema-dts';
 
 type TVShowPageProps = {
-  params: Promise<{
+  params: {
     slug: string;
-  }>;
+  };
 };
 
 export const runtime = 'edge';
 
 export async function generateMetadata({ params }: TVShowPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const showId = extractIdFromSlug(slug);
+  const showId = extractIdFromSlug(params.slug);
   if (!showId) {
     return { title: 'TV Show not found' };
   }
@@ -36,19 +29,17 @@ export async function generateMetadata({ params }: TVShowPageProps): Promise<Met
     };
   }
 
-  const releaseYear = show.first_air_date ? new Date(show.first_air_date).getFullYear() : '';
-  const title = `Watch ${show.name} (${releaseYear}) Online Free - All Seasons HD | ${siteConfig.name}`;
-  const description = `Binge all seasons of ${show.name} (${releaseYear}) in HD/4K for free. Episode guides, cast details, and full streaming on ${siteConfig.name}.`;
-  
+  const title = `Watch ${show.name} in 4K Online | All Episodes Free`;
+  const description = `Binge-watch all seasons and episodes of ${show.name} in stunning 4K for free. Get episode guides, cast details, and reviews. No subscription required.`;
   const keywords = [
     show.name,
-    `${show.name} series`,
-    'watch tv shows free',
-    'stream all episodes',
-    'free streaming site',
+    ...show.genres.map(g => g.name),
+    'watch series online',
+    'free tv shows',
+    '4K series',
+    'all episodes',
   ];
-
-  const canonicalUrl = `${siteConfig.url}/tv/${slug}`;
+  const canonicalUrl = `/tv/${params.slug}`;
 
   return {
     title,
@@ -69,20 +60,30 @@ export async function generateMetadata({ params }: TVShowPageProps): Promise<Met
                 height: 750,
                 alt: show.name,
             },
+            {
+                url: getBackdropImage(show.backdrop_path, 'w1280'),
+                width: 1280,
+                height: 720,
+                alt: `Backdrop for ${show.name}`,
+            },
         ],
     },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [getBackdropImage(show.backdrop_path, 'w1280')],
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
   };
 }
 
 export default async function TVShowPage({ params }: TVShowPageProps) {
-  const { slug } = await params;
-  const showId = extractIdFromSlug(slug);
+  const showId = extractIdFromSlug(params.slug);
   if (!showId) {
     notFound();
   }
@@ -109,44 +110,31 @@ export default async function TVShowPage({ params }: TVShowPageProps) {
     name: show.name,
     description: show.overview,
     image: getPosterImage(show.poster_path, 'original'),
-    numberOfSeasons: show.seasons.filter(s => s.season_number > 0).length,
+    numberOfSeasons: show.seasons.filter(s => s.season_number > 0).length.toString(),
     aggregateRating: show.vote_count > 0 ? {
         '@type': 'AggregateRating',
         ratingValue: show.vote_average,
         bestRating: 10,
         ratingCount: show.vote_count,
     } : undefined,
-  };
-
-  const breadcrumbSchema: BreadcrumbList = {
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: siteConfig.url,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'TV Shows',
-        item: `${siteConfig.url}/tv`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: show.name,
-        item: `${siteConfig.url}/tv/${slug}`,
-      },
-    ],
+    actors: show.credits.cast.slice(0, 10).map(person => ({
+        '@type': 'Person',
+        name: person.name,
+    })),
+    trailer: show.videos?.results.find(v => v.type === 'Trailer' && v.official) ? {
+        '@type': 'VideoObject',
+        name: show.videos.results.find(v => v.type === 'Trailer' && v.official)!.name,
+        embedUrl: `https://www.youtube.com/watch?v=${show.videos.results.find(v => v.type === 'Trailer' && v.official)!.key}`,
+        thumbnailUrl: `https://img.youtube.com/vi/${show.videos.results.find(v => v.type === 'Trailer' && v.official)!.key}/hqdefault.jpg`,
+    } : undefined,
   };
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(tvSeriesSchema)} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(breadcrumbSchema)} />
-      
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLd(tvSeriesSchema)}
+      />
       <div className="flex flex-col">
         <BackgroundImage posterUrl={getPosterImage(show.poster_path)} backdropUrl={getBackdropImage(show.backdrop_path)} />
         
@@ -154,9 +142,7 @@ export default async function TVShowPage({ params }: TVShowPageProps) {
           <MediaHero item={show} type="tv" />
         </div>
         
-        <div className="py-12 space-y-12 px-4 sm:px-8 max-w-7xl mx-auto w-full">
-
-          <MediaLlmSummary item={show} type="tv" />
+        <div className="py-12 space-y-12 px-4 sm:px-8">
 
           {watchProviders && <WatchProviders providers={watchProviders} />}
           

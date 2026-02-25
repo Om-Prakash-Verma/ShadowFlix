@@ -149,7 +149,7 @@ const CarouselProvider = React.forwardRef<
     )
   }
 )
-CarouselProvider.displayName = "CarouselProvider"
+CarouselProvider.displayName = "Carousel"
 
 const CarouselContent = React.forwardRef<
   HTMLDivElement,
@@ -274,10 +274,10 @@ const Carousel = ({ children }: { children: React.ReactNode }) => {
 
 export {
   type CarouselApi,
-  CarouselProvider,
+  CarouselProvider as ShadcnCarousel, // Keep original export name for clarity if needed elsewhere
   CarouselContent,
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
-  Carousel,
+  Carousel, // Export our styled version as the default
 }

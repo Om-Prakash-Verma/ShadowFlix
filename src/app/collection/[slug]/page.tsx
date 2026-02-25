@@ -1,21 +1,22 @@
+
 import { notFound } from 'next/navigation';
 import { getCollectionDetails } from '@/lib/tmdb';
 import { extractIdFromSlug, getPosterImage, getBackdropImage } from '@/lib/utils';
 import { BackgroundImage } from '@/components/media/details';
 import { PosterCard } from '@/components/media';
 import type { Metadata } from 'next';
+import { siteConfig } from '@/config/site';
+
+type CollectionPageProps = {
+  params: {
+    slug: string;
+  };
+};
 
 export const runtime = 'edge';
 
-type CollectionPageProps = {
-  params: Promise<{
-    slug: string;
-  }>;
-};
-
 export async function generateMetadata({ params }: CollectionPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const collectionId = extractIdFromSlug(slug);
+  const collectionId = extractIdFromSlug(params.slug);
   if (!collectionId) {
     return { title: 'Collection not found' };
   }
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
 
   const title = `Watch the ${collection.name} Collection`;
   const description = `Browse all ${collection.parts.length} movies from the ${collection.name} collection in order. ${collection.overview}`;
-  const canonicalUrl = `/collection/${slug}`;
+  const canonicalUrl = `/collection/${params.slug}`;
 
   return {
     title,
@@ -73,8 +74,7 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
 }
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
-  const { slug } = await params;
-  const collectionId = extractIdFromSlug(slug);
+  const collectionId = extractIdFromSlug(params.slug);
   if (!collectionId) {
     notFound();
   }

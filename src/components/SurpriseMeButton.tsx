@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState } from 'react';
 import { Dices, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/dialogs';
 import { surpriseMeAction } from '@/lib/tmdb';
 
 export function SurpriseMeButton() {
@@ -13,6 +14,7 @@ export function SurpriseMeButton() {
     setIsLoading(true);
     try {
       await surpriseMeAction();
+      // The redirect happens on the server, so we might not even see the loading state reset.
     } catch (error) {
       console.error('Surprise me failed:', error);
       setIsLoading(false);
