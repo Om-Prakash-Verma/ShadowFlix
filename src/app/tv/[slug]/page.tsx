@@ -1,8 +1,15 @@
-
 import { notFound } from 'next/navigation';
 import { getTVShowDetails, getSeasonDetails, getTvRecommendations, getTvReviews } from '@/lib/tmdb';
 import { extractIdFromSlug, getBackdropImage, getPosterImage, jsonLd } from '@/lib/utils';
-import { CreditsCarousel, SeasonsDisplay, BackgroundImage, MediaHero, TrailersCarousel, WatchProviders, Recommendations, Reviews, MediaLlmSummary } from '@/components/media/details';
+import { CreditsCarousel } from '@/components/media/details/credits-carousel';
+import { SeasonsDisplay } from '@/components/media/details/seasons-display';
+import { BackgroundImage } from '@/components/media/details/background-image';
+import { MediaHero } from '@/components/media/details/media-hero';
+import { TrailersCarousel } from '@/components/media/details/trailers-carousel';
+import { Recommendations } from '@/components/media/details/recommendations';
+import { Reviews } from '@/components/media/details/reviews';
+import { MediaLlmSummary } from '@/components/media/details/media-llm-summary';
+import { WatchProviders } from '@/components/media/details/watch-providers';
 import type { Metadata } from 'next';
 import { siteConfig } from '@/config/site';
 import type { TVSeries, BreadcrumbList } from 'schema-dts';

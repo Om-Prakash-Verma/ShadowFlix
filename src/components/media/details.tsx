@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -6,15 +7,19 @@ import Link from 'next/link';
 import { useInView } from 'react-intersection-observer';
 import type { CastMember, MovieDetails, TVShowDetails, Season, SeasonDetails as SeasonDetailsType, Episode, Video, WatchProviders as WatchProvidersType, ProductionCompany, PersonCombinedCreditsCast, Movie, TVShow, Review, PagedResponse } from '@/lib/tmdb-schemas';
 import { slugify, formatRuntime, getBackdropImage, getPosterImage, getProfileImage } from '@/lib/utils';
-import { StarRating, PosterCard } from '@/components/media';
+import { StarRating } from '@/components/media/star-rating';
+import { PosterCard } from '@/components/media/poster-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, ScrollArea, AspectRatio, Avatar, AvatarFallback, AvatarImage, CardContent, CardFooter, CardHeader } from '@/components/ui/layout';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/forms';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlayButton } from '@/components/PlayerModal';
-import { ShadcnCarousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialogs';
+import { CarouselProvider, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight, PlayCircle, Loader2, Star, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchTMDB } from '@/lib/tmdb-client';
@@ -233,7 +238,7 @@ export function CreditsCarousel({ credits, title }: CreditsCarouselProps) {
     <section>
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
       <div className="relative overflow-hidden">
-        <ShadcnCarousel
+        <CarouselProvider
           opts={{
             align: 'start',
             loop: false,
@@ -278,7 +283,7 @@ export function CreditsCarousel({ credits, title }: CreditsCarouselProps) {
           <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
             <ChevronRight className="h-6 w-6" />
           </CarouselNext>
-        </ShadcnCarousel>
+        </CarouselProvider>
       </div>
     </section>
   );
@@ -486,7 +491,7 @@ export function TrailersCarousel({ videos }: TrailersCarouselProps) {
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">Trailers & Videos</h2>
-      <ShadcnCarousel
+      <CarouselProvider
         opts={{
           align: 'start',
           loop: false,
@@ -530,7 +535,7 @@ export function TrailersCarousel({ videos }: TrailersCarouselProps) {
         <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
           <ChevronRight className="h-6 w-6" />
         </CarouselNext>
-      </ShadcnCarousel>
+      </CarouselProvider>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         {selectedVideo && (
@@ -661,7 +666,7 @@ export function Recommendations({ id, type, initialData }: RecommendationsProps)
   return (
     <section>
       <h2 className="text-2xl font-bold mb-4">More Like This</h2>
-      <ShadcnCarousel
+      <CarouselProvider
         opts={{
           align: 'start',
           loop: false,
@@ -681,7 +686,7 @@ export function Recommendations({ id, type, initialData }: RecommendationsProps)
         <CarouselNext className="absolute right-8 top-1/2 -translate-y-1/2 h-10 w-10 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-2 border-primary/50 text-primary hover:border-primary transition-all duration-300 disabled:opacity-0 disabled:scale-90" >
           <ChevronRight className="h-6 w-6" />
         </CarouselNext>
-      </ShadcnCarousel>
+      </CarouselProvider>
     </section>
   );
 }

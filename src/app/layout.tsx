@@ -1,9 +1,8 @@
-
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { Toaster } from '@/components/ui/dialogs';
+import { Toaster } from '@/components/ui/toaster';
 import { siteConfig } from '@/config/site';
 import { cn, jsonLd } from '@/lib/utils';
 import { AdScripts } from '@/components/AdScripts';
@@ -92,7 +91,7 @@ export default function RootLayout({
     url: siteConfig.url,
     logo: `${siteConfig.url}/icon.png`,
     sameAs: [
-      'https://twitter.com/flixwatch', // Placeholder for brand signals
+      'https://twitter.com/flixwatch',
       'https://github.com/flixwatch'
     ]
   };
