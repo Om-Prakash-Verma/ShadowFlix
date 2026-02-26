@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import type { Metadata } from 'next';
-
+export const runtime = 'edge';
 type GuideProps = {
   params: { slug: string };
 };
