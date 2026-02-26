@@ -1,15 +1,14 @@
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/dialogs';
 import { siteConfig } from '@/config/site';
-import { cn } from '@/lib/utils';
+import { cn, jsonLd } from '@/lib/utils';
 import { AdScripts } from '@/components/AdScripts';
 import { Inter, Roboto_Flex } from 'next/font/google';
-import { Organization } from 'schema-dts';
-import { jsonLd } from '@/lib/utils';
+import { Organization, WebSite } from 'schema-dts';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -23,6 +22,11 @@ const robotoFlex = Roboto_Flex({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  themeColor: '#050505',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -32,14 +36,24 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: [
-    'free movies',
-    'free tv shows',
-    'watch movies online',
-    '4k streaming',
-    'HD movies',
-    'online streaming',
-    'Flix',
+    'watch movies free',
+    'stream tv shows online',
+    '4k free streaming',
+    'no sign up movies',
+    'legal movie database',
+    'flixwatch',
+    'best free streaming sites 2024',
   ],
+  alternates: {
+    canonical: './',
+    languages: {
+      'en-US': './',
+      'en-GB': './',
+      'en-CA': './',
+      'en-AU': './',
+      'x-default': './',
+    },
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -47,6 +61,11 @@ export const metadata: Metadata = {
     title: siteConfig.name,
     description: siteConfig.description,
     siteName: siteConfig.name,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: siteConfig.name,
+    description: siteConfig.description,
   },
   robots: {
     index: true,
@@ -72,6 +91,24 @@ export default function RootLayout({
     name: siteConfig.name,
     url: siteConfig.url,
     logo: `${siteConfig.url}/icon.png`,
+    sameAs: [
+      'https://twitter.com/flixwatch', // Placeholder for brand signals
+      'https://github.com/flixwatch'
+    ]
+  };
+
+  const websiteSchema: WebSite = {
+    '@type': 'WebSite',
+    name: siteConfig.name,
+    url: siteConfig.url,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${siteConfig.url}/search?q={search_term_string}`
+      },
+      'query-input': 'required name=search_term_string'
+    } as any
   };
 
   return (
@@ -81,6 +118,10 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={jsonLd(organizationSchema)}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLd(websiteSchema)}
+        />
         <AdScripts />
       </head>
       <body
@@ -88,7 +129,7 @@ export default function RootLayout({
           "font-headline bg-background text-foreground antialiased",
           "transition-all duration-500"
         )}>
-        <div className="relative flex min-h-screen flex-col" data-version="1.0.2">
+        <div className="relative flex min-h-screen flex-col">
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

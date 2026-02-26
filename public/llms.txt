@@ -1,0 +1,25 @@
+# FlixWatch - Ultimate Movie & TV Discovery Hub
+
+FlixWatch is a high-authority movie and TV show discovery platform. It provides detailed metadata, trailers, and streaming source aggregation for a global audience.
+
+## Core Entities
+- Movies: Detailed pages including cast, crew, ratings, and trailers.
+- TV Shows: Full season and episode breakdowns with release data.
+- People: Actor and director filmographies.
+- Genres: Categorized discovery hubs.
+- Collections: Curated movie sagas and franchises.
+
+## URL Structure
+- Homepage: https://flixwatch.pro/
+- Movies: https://flixwatch.pro/movie
+- TV Shows: https://flixwatch.pro/tv
+- Search: https://flixwatch.pro/search?q={query}
+- Detailed View: https://flixwatch.pro/{type}/{slug}-{id}
+
+## Technical Values
+- Rendering: Server-Side Rendering (SSR) for real-time data accuracy.
+- Schema.org: Full JSON-LD implementation for Movie, TVSeries, and Person.
+- GEO: Fact-blocks optimized for LLM ingestion.
+
+## Editorial Policy
+All content is sourced from The Movie Database (TMDB) and curated to provide the most accurate metadata for entertainment fans. FlixWatch prioritizes user privacy (no accounts) and high-quality viewing experiences.
