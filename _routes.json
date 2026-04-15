@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "include": [
+    "/movie/*",
+    "/tv/*",
+    "/person/*",
+    "/actor/*",
+    "/company/*",
+    "/genre/*",
+    "/year/*",
+    "/collections/*",
+    "/search",
+    "/api/browse*",
+    "/api/search*"
+  ],
+  "exclude": [
+    "/",
+    "/top-movies",
+    "/top-tv-shows",
+    "/watchlist",
+    "/_next/static/*",
+    "/favicon.ico",
+    "/robots.txt",
+    "/sitemap.xml"
+  ]
+}

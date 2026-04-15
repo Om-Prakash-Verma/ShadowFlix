@@ -1,128 +1,153 @@
+import { AppLink } from "@/components/app-link";
+import { CategoryRow } from "@/components/category-row";
+import { CollectionGrid } from "@/components/collection-grid";
+import { DecadeRow } from "@/components/decade-row";
+import { HeroBanner } from "@/components/hero-banner";
+import MagicBento, { MagicBentoItem } from "@/components/MagicBento";
+import { MovieRow } from "@/components/movie-row";
+import { SupportPanel } from "@/components/support-panel";
+import { TopRankingRow } from "@/components/top-ranking-row";
+import { DECADES } from "@/lib/site";
+import { getHomepageData, getMovieGenres, getTvGenres } from "@/lib/tmdb";
 
+export const revalidate = 3600;
 
-import type { Metadata } from 'next';
-import { HeroSlideshow } from '@/components/Hero';
-import {
-  fetchAllHomepageData,
-  getGenres,
-} from '@/lib/tmdb';
-import { PosterCard } from '@/components/media';
-import { Carousel } from '@/components/ui/carousel';
-import { RecentlyReleased } from '@/components/RecentlyReleased';
-import { FeaturedCollections } from '@/components/FeaturedCollections';
-import type { Movie, TVShow } from '@/lib/tmdb-schemas';
-import { BackgroundImage } from '@/components/media/details';
-import { getPosterImage, getBackdropImage, jsonLd } from '@/lib/utils';
-import type { WebSite } from 'schema-dts';
-import { siteConfig } from '@/config/site';
-
-export const runtime = 'edge';
-
-export const metadata: Metadata = {
-    title: 'Watch Movies & TV Shows Online for Free | '+ siteConfig.name,
-    alternates: {
-        canonical: '/',
-    },
-};
-
-// Function to shuffle content for the hero slideshow
-function shuffleContent(items: (Movie | TVShow)[]) {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
   }
-  return items;
+  return chunks;
 }
 
-async function HomePage() {
-  const [
-    homepageData,
-    movieGenresMap,
-    tvGenresMap,
-  ] = await Promise.all([
-    fetchAllHomepageData(),
-    getGenres('movie'),
-    getGenres('tv'),
-  ]);
-
-  const {
-    popularMovies,
-    topRatedMovies,
-    trendingMovies,
-    popularTVShows,
-    topRatedTVShows,
-    trendingTVShows,
-  } = homepageData;
-
-  const allGenresMap = { ...movieGenresMap, ...tvGenresMap };
-
-  // Use a mix of popular movies and tv shows for the hero
-  const heroSourceItems = [...popularMovies, ...popularTVShows];
-
-  const heroItemsSource = shuffleContent(heroSourceItems.slice(0, 10)).map(item => {
-    // The popular endpoints have a clear media type in the schema, but we can be defensive
-    const media_type = 'title' in item ? 'movie' : 'tv';
-    const genreNames = item.genre_ids?.map(id => allGenresMap[id]).filter(Boolean) || [];
-    return { ...item, genreNames, media_type };
-  });
-
-  const backgroundItem = heroItemsSource[0];
-  const slideshowItems = heroItemsSource.length > 1 ? heroItemsSource.slice(1, 6) : []; // Limit to 5 for the slideshow
-
-  const backgroundPosterUrl = backgroundItem ? getPosterImage(backgroundItem.poster_path) : '';
-  const backgroundBackdropUrl = backgroundItem ? getBackdropImage(backgroundItem.backdrop_path) : '';
-
-  const carousels = [
-    { title: "Popular Movies", items: popularMovies, type: 'movie' as const },
-    { title: "Top Rated Movies", items: topRatedMovies, type: 'movie' as const },
-    { title: "Trending Movies This Week", items: trendingMovies, type: 'movie' as const },
-    { title: "Popular TV Shows", items: popularTVShows, type: 'tv' as const },
-    { title: "Top Rated TV Shows", items: topRatedTVShows, type: 'tv' as const },
-    { title: "Trending TV Shows This Week", items: trendingTVShows, type: 'tv' as const },
-  ].filter(c => c.items && c.items.length > 0);
-
-  const websiteSchema: WebSite = {
-    '@type': 'WebSite',
-    name: siteConfig.name,
-    url: siteConfig.url,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${siteConfig.url}/search?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
-  };
+export default async function Home() {
+  const [data, movieGenres, tvGenres] = await Promise.all([getHomepageData(), getMovieGenres(), getTvGenres()]);
+  const categoryGroups = chunkItems(data.categories, 2);
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={jsonLd(websiteSchema)}
-      />
-      <div className="flex flex-col">
-        <BackgroundImage posterUrl={backgroundPosterUrl} backdropUrl={backgroundBackdropUrl} />
-        {slideshowItems.length > 0 && <HeroSlideshow items={slideshowItems} />}
-        <div className="flex flex-col space-y-12 py-12">
+    <main className="pb-20">
+      <HeroBanner item={data.hero} previews={data.trending.slice(1, 6)} genres={[...movieGenres, ...tvGenres]} />
+      <div className="flex w-full flex-col gap-12 px-4 pt-8 md:px-8">
+        <MagicBento
+          className="w-full gap-5"
+          textAutoHide
+          enableStars
+          enableSpotlight
+          enableBorderGlow
+          enableTilt
+          enableMagnetism
+          clickEffect
+          spotlightRadius={800}
+          particleCount={12}
+          glowColor="132, 0, 255"
+        >
+          <MagicBentoItem className="lg:col-span-12 xl:col-span-8" cardClassName="p-0">
+            <MovieRow title="Now Playing" items={data.nowPlaying.slice(0, 18)} viewAllHref="/top-movies" rankNumbers />
+          </MagicBentoItem>
+          <MagicBentoItem className="lg:col-span-6 xl:col-span-4" cardClassName="p-0">
+            <TopRankingRow title="Movies Today" items={data.topMovies} href="/top-movies" />
+          </MagicBentoItem>
+          <MagicBentoItem className="lg:col-span-6 xl:col-span-4" cardClassName="p-0">
+            <TopRankingRow title="TV Shows Today" items={data.topTVShows} href="/top-tv-shows" />
+          </MagicBentoItem>
+          <MagicBentoItem className="lg:col-span-12 xl:col-span-8">
+            <SupportPanel
+              eyebrow="Quick Discovery"
+              title="Jump Into The Best Parts Of FreeFlix"
+              description="Move from live popularity to curated archives without losing the streaming rhythm. Use this block to jump into the strongest browse paths instead of scrolling shelf by shelf."
+              links={[
+                { eyebrow: "Live Pulse", label: "Trending Now", href: "/genre/trending" },
+                { eyebrow: "Personal", label: "Your Watchlist", href: "/watchlist" },
+                { eyebrow: "Archive", label: `${DECADES[0]}s Picks`, href: `/year/${DECADES[0]}` },
+                { eyebrow: "Ranked", label: "Top TV Shows", href: "/top-tv-shows" },
+              ]}
+            />
+          </MagicBentoItem>
+        </MagicBento>
 
-          <FeaturedCollections />
+        <MagicBento
+          className="w-full gap-5"
+          textAutoHide
+          enableStars
+          enableSpotlight
+          enableBorderGlow
+          enableTilt
+          enableMagnetism
+          clickEffect
+          spotlightRadius={800}
+          particleCount={12}
+          glowColor="132, 0, 255"
+        >
+          <MagicBentoItem className="lg:col-span-12 xl:col-span-9" cardClassName="p-0">
+            <MovieRow title="Popular" items={data.popular.slice(0, 18)} viewAllHref="/genre/trending" rankNumbers />
+          </MagicBentoItem>
+          <MagicBentoItem className="lg:col-span-12 xl:col-span-3">
+            <SupportPanel
+              eyebrow="Browse Architecture"
+              title="Choose How You Want To Explore"
+              description="This section shifts the homepage from pure popularity into deeper discovery. Move between current hits, curated collections, and decade archives depending on whether you want instant picks or a slower browse."
+              links={[
+                { eyebrow: "Hit Lists", label: "Top Movies", href: "/top-movies" },
+                { eyebrow: "Series Radar", label: "Top TV Shows", href: "/top-tv-shows" },
+                { eyebrow: "Time Travel", label: "Browse By Year", href: `/year/${DECADES[Math.floor(DECADES.length / 2)]}` },
+              ]}
+            />
+          </MagicBentoItem>
+          <MagicBentoItem className="lg:col-span-12" cardClassName="p-0">
+            <CollectionGrid items={data.featuredCollections} />
+          </MagicBentoItem>
+          <MagicBentoItem className="lg:col-span-12" cardClassName="p-0">
+            <DecadeRow decades={DECADES} />
+          </MagicBentoItem>
+        </MagicBento>
 
-          <RecentlyReleased />
+        <section className="content-auto space-y-8">
+          {categoryGroups.map((group, index) => {
+            const primary = group[0];
+            const secondary = group[1];
 
-          {carousels.map(carousel => (
-            <section key={carousel.title}>
-              <h2 className="text-2xl font-bold mb-4 uppercase tracking-wider px-4 sm:px-8">{carousel.title}</h2>
-              <Carousel>
-                {carousel.items.map((item) => {
-                  const itemType = 'title' in item ? 'movie' : 'tv';
-                  return <PosterCard key={item.id} item={item} type={itemType as 'movie' | 'tv'} />;
-                })}
-              </Carousel>
-            </section>
-          ))}
+            return (
+              <MagicBento
+                key={primary.title}
+                className="w-full gap-5"
+                textAutoHide
+                enableStars
+                enableSpotlight
+                enableBorderGlow
+                enableTilt
+                enableMagnetism
+                clickEffect
+                spotlightRadius={800}
+                particleCount={12}
+                glowColor="132, 0, 255"
+              >
+                <MagicBentoItem className="lg:col-span-9" cardClassName="p-0">
+                  <CategoryRow title={primary.title} href={primary.href} items={primary.items.slice(0, 18)} rankNumbers />
+                </MagicBentoItem>
 
-        </div>
+                <MagicBentoItem className="lg:col-span-3">
+                  <SupportPanel
+                    eyebrow="Category Atlas"
+                    title={primary.title}
+                    description="Use this lane when you want a narrower mood than the homepage hero. It keeps the scroll focused on one theme while still linking you back into broader FreeFlix discovery paths."
+                    links={[
+                      { eyebrow: "Primary Lane", label: primary.title, href: primary.href },
+                      { eyebrow: secondary ? "Next Lane" : "Fallback Lane", label: secondary?.title ?? "Trending Hub", href: secondary?.href ?? "/genre/trending" },
+                    ]}
+                    tags={["Curated shelf", "Fast browse", "Direct links"]}
+                  />
+                </MagicBentoItem>
+
+                {secondary ? (
+                  <MagicBentoItem className="lg:col-span-12" cardClassName="p-0">
+                    <CategoryRow title={secondary.title} href={secondary.href} items={secondary.items.slice(0, 18)} rankNumbers />
+                  </MagicBentoItem>
+                ) : null}
+              </MagicBento>
+            );
+          })}
+        </section>
       </div>
-    </>
+    </main>
   );
 }
-
-export default HomePage;

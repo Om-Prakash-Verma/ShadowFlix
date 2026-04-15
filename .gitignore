@@ -1,8 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
-node_modules
-.git
+/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -18,6 +16,9 @@ node_modules
 /.next/
 /out/
 
+# cloudflare pages output
+/.vercel/output
+
 # production
 /build
 
@@ -31,15 +32,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# env files (can opt-in for committing if needed)
+.env*
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-.genkit/*
-
-# firebase
-firebase-debug.log
-firestore-debug.log
+.env

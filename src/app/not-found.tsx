@@ -1,24 +1,13 @@
-
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { TriangleAlert } from 'lucide-react';
+import { AppLink } from "@/components/app-link";
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-13rem)] text-center px-4 sm:px-8">
-      <TriangleAlert className="w-16 h-16 text-primary mb-4" />
-      <h1 className="text-6xl md:text-8xl font-black text-primary tracking-tighter">
-        404
-      </h1>
-      <h2 className="text-2xl md:text-3xl font-bold mt-4 mb-2">
-        Page Not Found
-      </h2>
-      <p className="text-muted-foreground max-w-md mb-8">
-        Oops! The page you are looking for does not exist. It might have been moved or deleted.
-      </p>
-      <Button asChild size="lg">
-        <Link href="/" prefetch={false}>Go to Homepage</Link>
-      </Button>
-    </div>
+    <main className="mx-auto flex min-h-[70svh] max-w-3xl flex-col items-center justify-center px-6 text-center">
+      <p className="text-xs uppercase tracking-[0.38em] text-white/55">404</p>
+      <h1 className="mt-4 text-4xl font-black text-white">This title drifted off the marquee.</h1>
+      <p className="mt-4 text-white/70">The page could not be found, but the homepage still has plenty of films, shows, genres, and ranked lists to explore.</p>
+      <AppLink href="/" className="mt-8 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/88">Return Home</AppLink>
+    </main>
   );
 }
+
